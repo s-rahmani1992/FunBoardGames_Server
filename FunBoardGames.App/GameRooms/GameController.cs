@@ -1,4 +1,5 @@
 ﻿using FunBoardGames.App.Services;
+using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.GameRooms
 {
@@ -25,8 +26,8 @@ namespace FunBoardGames.App.GameRooms
 
         public abstract bool RemovePlayer(string connectionId);
 
-        public abstract IEnumerable<Profile> GetPlayers();
+        public abstract IEnumerable<UserProfileDTO> GetPlayers();
 
-        public abstract RoomInfo GetInfo();
+        public abstract RoomInfoDTO GetInfo();
     }
 }

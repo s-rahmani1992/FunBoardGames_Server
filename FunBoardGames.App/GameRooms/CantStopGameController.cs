@@ -1,5 +1,6 @@
 ﻿
 using FunBoardGames.App.Services;
+using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.GameRooms
 {
@@ -16,16 +17,16 @@ namespace FunBoardGames.App.GameRooms
             throw new NotImplementedException();
         }
 
-        public override IEnumerable<Profile> GetPlayers()
+        public override IEnumerable<UserProfileDTO> GetPlayers()
         {
             throw new NotImplementedException();
         }
 
-        public override RoomInfo GetInfo()
+        public override RoomInfoDTO GetInfo()
         {
-            return new RoomInfo()
+            return new RoomInfoDTO()
             {
-                GameType = Messages.BoardGame.CantStop,
+                GameType = BoardGameType.CantStop,
                 Id = RoomId,
                 MaxPlayers = 4,
                 PlayerCount = 1,

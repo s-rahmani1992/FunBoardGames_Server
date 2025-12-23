@@ -1,5 +1,5 @@
 ﻿
-using FunBoardGames.App.Services;
+using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.GameRooms
 {
@@ -20,11 +20,11 @@ namespace FunBoardGames.App.GameRooms
             return true;
         }
 
-        public override RoomInfo GetInfo()
+        public override RoomInfoDTO GetInfo()
         {
-            return new RoomInfo()
+            return new RoomInfoDTO
             {
-                GameType = Messages.BoardGame.SET,
+                GameType = BoardGameType.SET,
                 Id = RoomId,
                 MaxPlayers = 4,
                 PlayerCount = players.Count(),
@@ -32,9 +32,9 @@ namespace FunBoardGames.App.GameRooms
             };
         }
 
-        public override IEnumerable<Profile> GetPlayers()
+        public override IEnumerable<UserProfileDTO> GetPlayers()
         {
-            return players.Select(player => new Profile
+            return players.Select(player => new UserProfileDTO
             {
                 PlayerName = player.Name,
                 ConnectionId = player.ConnectionId,

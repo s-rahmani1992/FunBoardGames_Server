@@ -1,20 +1,10 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using FunBoardGames.App.Messages;
 using FunBoardGames.App.Services;
 using FunBoardGames.App.GameRooms;
 using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App
 {
-    public static class MessageNames
-    {
-        public const string CreateRoom = "CreateRoom";
-        public const string JoinRoom = "JoinRoom";
-        public const string PlayerJoinRoom = "PlayerJoinRoom";
-        public const string GetRoomList = "GetRoomList";
-        public const string PlayerLeave = "PlayerLeave";
-    }
-
     public class GameHub : Hub
     {
         static HashSet<string> connectedUsers = [];
@@ -72,8 +62,8 @@ namespace FunBoardGames.App
 
         #region Lobby and MatchMaking
 
-        [HubMethodName(MessageNames.CreateRoom)]
-        public async Task CreateRoom(CreateRoomRequestMsg createRoomMsg)
+        [HubMethodName(LobbyMessageNames.CreateRoom)]
+        public async Task CreateRoom(CreateRoomRequestMessage createRoomMsg)
         {
             var lobbyService = _provider.GetRequiredService<LobbyService>();
 
@@ -82,7 +72,7 @@ namespace FunBoardGames.App
             gameController.AddPlayer(Context.ConnectionId, Context.Items["name"] as string);
             Context.Items["room"] = gameController;
             await Groups.AddToGroupAsync(Context.ConnectionId, gameController.GroupKey);
-            await Clients.Caller.SendAsync(MessageNames.JoinRoom, new JoinRoomResponseMsg
+            await Clients.Caller.SendAsync(LobbyMessageNames.JoinRoom, new JoinRoomResponseMessage
             {
                 Game = createRoomMsg.Game,
                 RoomName = createRoomMsg.RoomName,
@@ -91,8 +81,8 @@ namespace FunBoardGames.App
             });
         }
 
-        [HubMethodName(MessageNames.JoinRoom)]
-        public async Task JoinRoom(JoinRoomRequestMsg joinRoomMsg)
+        [HubMethodName(LobbyMessageNames.JoinRoom)]
+        public async Task JoinRoom(JoinRoomRequestMessage joinRoomMsg)
         {
             var lobbyService = _provider.GetRequiredService<LobbyService>();
             GameController? gameController = lobbyService.GetGame(joinRoomMsg.Game, joinRoomMsg.RoomId);
@@ -104,16 +94,16 @@ namespace FunBoardGames.App
             Context.Items["room"] = gameController; 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameController.GroupKey);
 
-            await Clients.OthersInGroup(gameController.GroupKey).SendAsync(MessageNames.PlayerJoinRoom, new PlayerJoinRoomResponseMsg()
+            await Clients.OthersInGroup(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerJoinRoom, new PlayerJoinRoomResponseMessage()
             {
-                NewPlayer = new Profile()
+                NewPlayer = new UserProfileDTO()
                 {
                     ConnectionId = Context.ConnectionId,
                     PlayerName = Context.Items["name"] as string,
                 },
             });
 
-            await Clients.Caller.SendAsync(MessageNames.JoinRoom, new JoinRoomResponseMsg
+            await Clients.Caller.SendAsync(LobbyMessageNames.JoinRoom, new JoinRoomResponseMessage
             {
                 Game = joinRoomMsg.Game,
                 RoomName = gameController.RoomName,
@@ -122,18 +112,18 @@ namespace FunBoardGames.App
             });
         }
 
-        [HubMethodName(MessageNames.PlayerLeave)]
+        [HubMethodName(LobbyMessageNames.PlayerLeave)]
         public async Task LeaveRoom()
         {
             await LeaveRoomInternal();
         }
 
-        [HubMethodName(MessageNames.GetRoomList)]
-        public async Task GetRoomList(GetRoomListRequestMsg getRoomMsg)
+        [HubMethodName(LobbyMessageNames.GetRoomList)]
+        public async Task GetRoomList(GetRoomListRequestMessage getRoomMsg)
         {
             var lobbyService = _provider.GetRequiredService<LobbyService>();
 
-            await Clients.Caller.SendAsync(MessageNames.GetRoomList, new GetRoomListResponseMsg()
+            await Clients.Caller.SendAsync(LobbyMessageNames.GetRoomList, new GetRoomListResponseMessage()
             {
                 Rooms = lobbyService.GetGames(getRoomMsg.Game).Select(game => game.GetInfo()).ToList(),
             });
@@ -147,12 +137,12 @@ namespace FunBoardGames.App
                 gameController.RemovePlayer(Context.ConnectionId);
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameController.GroupKey);
 
-                await Clients.Group(gameController.GroupKey).SendAsync(MessageNames.PlayerLeave, new PlayerLeaveRoomResponseMsg()
+                await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerLeave, new PlayerLeaveRoomResponseMessage()
                 {
                     ConnectionId = Context.ConnectionId,
                 });
 
-                await Clients.Caller.SendAsync(MessageNames.PlayerLeave, new PlayerLeaveRoomResponseMsg()
+                await Clients.Caller.SendAsync(LobbyMessageNames.PlayerLeave, new PlayerLeaveRoomResponseMessage()
                 {
                     ConnectionId = Context.ConnectionId,
                 });

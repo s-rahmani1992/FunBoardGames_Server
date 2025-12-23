@@ -1,18 +1,9 @@
 ﻿using FunBoardGames.App.GameRooms;
-using FunBoardGames.App.Messages;
+using FunBoardGames.Network.SignalR.Shared;
 using System.Collections.Concurrent;
 
 namespace FunBoardGames.App.Services
 {
-    public class RoomInfo
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public BoardGame GameType { get; set; }
-        public int PlayerCount { get; set; }
-        public int MaxPlayers { get; set; }
-    }
-
     public class LobbyService
     {
         ConcurrentDictionary<int, SETGameController> SETGames = new();
@@ -20,19 +11,19 @@ namespace FunBoardGames.App.Services
 
         int roomId = 0;
 
-        public GameController CreateGame(BoardGame gameType, string roomName)
+        public GameController CreateGame(BoardGameType gameType, string roomName)
         {
             Interlocked.Increment(ref roomId);
             GameController gameController;
 
             switch (gameType)
             {
-                case BoardGame.SET:
+                case BoardGameType.SET:
                     var setGame = new SETGameController(roomName, roomId);
                     gameController = setGame;
                     SETGames[roomId] = setGame;
                     break;
-                case BoardGame.CantStop:
+                case BoardGameType.CantStop:
                     var cantStopGame = new CantStopGameController(roomName, roomId);
                     gameController = cantStopGame;
                     CantStopGames[roomId] = cantStopGame;
@@ -44,14 +35,14 @@ namespace FunBoardGames.App.Services
             return gameController;
         }
 
-        public GameController? GetGame(BoardGame gameType, int roomId)
+        public GameController? GetGame(BoardGameType gameType, int roomId)
         {
             switch (gameType)
             {
-                case BoardGame.SET:
+                case BoardGameType.SET:
                     SETGames.TryGetValue(roomId, out SETGameController gamesetController);
                     return gamesetController;
-                case BoardGame.CantStop:
+                case BoardGameType.CantStop:
                     CantStopGames.TryGetValue(roomId, out CantStopGameController cantStopGameController);
                     return cantStopGameController;
             }
@@ -59,13 +50,13 @@ namespace FunBoardGames.App.Services
             return null;
         }
 
-        public IEnumerable<GameController> GetGames(BoardGame gameType)
+        public IEnumerable<GameController> GetGames(BoardGameType gameType)
         {
             switch(gameType)
             {
-                case BoardGame.SET:
+                case BoardGameType.SET:
                     return SETGames.Values;
-                case BoardGame.CantStop:
+                case BoardGameType.CantStop:
                     return CantStopGames.Values;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(gameType), $"Unsupported game type: {gameType}");
