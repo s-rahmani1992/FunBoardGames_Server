@@ -5,6 +5,8 @@ VisualStudioVersion = 17.14.36705.20
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunBoardGames.App", "FunBoardGames.App\FunBoardGames.App.csproj", "{FCAF93C2-3343-4BB6-9220-AF15E96728D0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunBoardGames.SignalR.Shared", "FunBoardGames.SignalR.Shared\FunBoardGames.SignalR.Shared.csproj", "{79D61980-7750-4224-B8C4-863C95B123A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{FCAF93C2-3343-4BB6-9220-AF15E96728D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FCAF93C2-3343-4BB6-9220-AF15E96728D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FCAF93C2-3343-4BB6-9220-AF15E96728D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79D61980-7750-4224-B8C4-863C95B123A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79D61980-7750-4224-B8C4-863C95B123A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79D61980-7750-4224-B8C4-863C95B123A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79D61980-7750-4224-B8C4-863C95B123A1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -2,12 +2,12 @@
 using FunBoardGames.App.Messages;
 using FunBoardGames.App.Services;
 using FunBoardGames.App.GameRooms;
+using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App
 {
     public static class MessageNames
     {
-        public const string Login = "Login";
         public const string CreateRoom = "CreateRoom";
         public const string JoinRoom = "JoinRoom";
         public const string PlayerJoinRoom = "PlayerJoinRoom";
@@ -43,21 +43,25 @@ namespace FunBoardGames.App
 
         #region Authentication
 
-        [HubMethodName(MessageNames.Login)]
-        public async Task LoginRequest(LoginRequestMsg loginMsg)
+        [HubMethodName(AuthenticationMessageNames.Login)]
+        public async Task LoginRequest(LoginRequestMessage loginMsg)
         {
             if(connectedUsers.Add(loginMsg.PlayerName))
             {
-                await Clients.Caller.SendAsync(MessageNames.Login, new LoginResponseMsg { 
-                    Success = true, 
-                    PlayerName = loginMsg.PlayerName, 
-                    ConnectionId = Context.ConnectionId,
+                await Clients.Caller.SendAsync(AuthenticationMessageNames.Login, new LoginResponseMessage { 
+                    Success = true,
+                    Profile = new()
+                    {
+                        PlayerName = loginMsg.PlayerName,
+                        ConnectionId = Context.ConnectionId,
+                    },  
                 });
                 Context.Items["name"] = loginMsg.PlayerName;
             }
             else
             {
-                await Clients.Caller.SendAsync(MessageNames.Login, new LoginResponseMsg { 
+                await Clients.Caller.SendAsync(AuthenticationMessageNames.Login, new LoginResponseMessage
+                { 
                     Success = false, 
                     ErrorMessage = "Username already taken.", 
                 });
