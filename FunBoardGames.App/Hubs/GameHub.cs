@@ -96,10 +96,14 @@ namespace FunBoardGames.App
 
             await Clients.OthersInGroup(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerJoinRoom, new PlayerJoinRoomResponseMessage()
             {
-                NewPlayer = new UserProfileDTO()
+                NewPlayer = new PlayerInfoDTO()
                 {
-                    ConnectionId = Context.ConnectionId,
-                    PlayerName = Context.Items["name"] as string,
+                    UserProfile = new UserProfileDTO
+                    {
+                        ConnectionId = Context.ConnectionId,
+                        PlayerName = Context.Items["name"] as string,
+                    },
+                    IsReady = false,
                 },
             });
 
@@ -127,6 +131,22 @@ namespace FunBoardGames.App
             {
                 Rooms = lobbyService.GetGames(getRoomMsg.Game).Select(game => game.GetInfo()).ToList(),
             });
+        }
+
+        [HubMethodName(LobbyMessageNames.PlayerReady)]
+        public async Task PlayerReady()
+        {
+            GameController gameController = Context.Items["room"] as GameController;
+            gameController.ChangeReady(Context.ConnectionId);
+            await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerReady, new PlayerReadyResponseMessage
+            {
+                ConnectionId = Context.ConnectionId,
+            });
+
+            if (gameController.AllPlayersReady)
+            {
+                await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.AllPlayersReady);
+            }
         }
 
         async Task LeaveRoomInternal()

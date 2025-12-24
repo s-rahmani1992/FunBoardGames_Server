@@ -10,6 +10,8 @@ namespace FunBoardGames.Network.SignalR.Shared
         public const string PlayerJoinRoom = "PlayerJoinRoom";
         public const string GetRoomList = "GetRoomList";
         public const string PlayerLeave = "PlayerLeave";
+        public const string PlayerReady = "PlayerReady";
+        public const string AllPlayersReady = "AllPlayersReady";
     }
 
     public enum BoardGameType
@@ -25,6 +27,12 @@ namespace FunBoardGames.Network.SignalR.Shared
         public BoardGameType GameType { get; set; }
         public int PlayerCount { get; set; }
         public int MaxPlayers { get; set; }
+    }
+
+    public class PlayerInfoDTO
+    {
+        public UserProfileDTO UserProfile { get; set; }
+        public bool IsReady { get; set; }
     }
 
     public class CreateRoomRequestMessage
@@ -44,7 +52,7 @@ namespace FunBoardGames.Network.SignalR.Shared
         public BoardGameType Game { get; set; }
         public int RoomId { get; set; }
         public string RoomName { get; set; }
-        public List<UserProfileDTO> JoinedPlayers { get; set; }
+        public List<PlayerInfoDTO> JoinedPlayers { get; set; }
     }
 
     public class GetRoomListRequestMessage
@@ -59,11 +67,16 @@ namespace FunBoardGames.Network.SignalR.Shared
 
     public class PlayerJoinRoomResponseMessage
     {
-        public UserProfileDTO NewPlayer { get; set; }
+        public PlayerInfoDTO NewPlayer { get; set; }
     }
 
     public class PlayerLeaveRoomResponseMessage
     {
         public string ConnectionId { get; set; } = string.Empty ;
+    }
+
+    public class PlayerReadyResponseMessage 
+    { 
+        public string ConnectionId { get; set;} = string.Empty ;
     }
 }

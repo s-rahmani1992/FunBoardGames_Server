@@ -15,6 +15,7 @@ namespace FunBoardGames.App.GameRooms
         public string RoomName { get; private set; } = string.Empty;
         public string GroupKey { get; protected set; }
         public abstract int PlayerCount { get; }
+        public abstract bool AllPlayersReady { get; }
 
         public GameController(string roomName, int id) 
         {  
@@ -26,8 +27,10 @@ namespace FunBoardGames.App.GameRooms
 
         public abstract bool RemovePlayer(string connectionId);
 
-        public abstract IEnumerable<UserProfileDTO> GetPlayers();
+        public abstract IEnumerable<PlayerInfoDTO> GetPlayers();
 
         public abstract RoomInfoDTO GetInfo();
+
+        public abstract void ChangeReady(string connectionId);
     }
 }

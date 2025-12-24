@@ -1,5 +1,4 @@
 ﻿
-using FunBoardGames.App.Services;
 using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.GameRooms
@@ -7,6 +6,8 @@ namespace FunBoardGames.App.GameRooms
     public class CantStopGameController : GameController
     {
         public override int PlayerCount => throw new NotImplementedException();
+
+        public override bool AllPlayersReady => throw new NotImplementedException();
 
         public CantStopGameController(string roomName, int id) : base(roomName, id)
         {
@@ -17,7 +18,7 @@ namespace FunBoardGames.App.GameRooms
             throw new NotImplementedException();
         }
 
-        public override IEnumerable<UserProfileDTO> GetPlayers()
+        public override IEnumerable<PlayerInfoDTO> GetPlayers()
         {
             throw new NotImplementedException();
         }
@@ -35,6 +36,11 @@ namespace FunBoardGames.App.GameRooms
         }
 
         public override bool RemovePlayer(string connectionId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void ChangeReady(string connectionId)
         {
             throw new NotImplementedException();
         }

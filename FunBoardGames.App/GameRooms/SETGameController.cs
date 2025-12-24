@@ -6,6 +6,7 @@ namespace FunBoardGames.App.GameRooms
     public class SETGameController : GameController
     {
         List<SETGamePlayer> players = [];
+        int minPlayers = 2;
 
         public SETGameController(string roomName, int id) : base(roomName, id)
         {
@@ -14,10 +15,26 @@ namespace FunBoardGames.App.GameRooms
 
         public override int PlayerCount => players.Count();
 
+        public override bool AllPlayersReady 
+        {
+            get
+            {
+                int readyCount = players.Where(player => player.IsReady).Count();
+
+                return readyCount == players.Count && players.Count >= minPlayers;
+            }
+        }
+
         public override bool AddPlayer(string connectionId, string playerName)
         {
             players.Add(new SETGamePlayer(playerName, connectionId));
             return true;
+        }
+
+        public override void ChangeReady(string connectionId)
+        {
+            var p = players.FirstOrDefault(player => player.ConnectionId ==  connectionId);
+            p?.SetReady(true);
         }
 
         public override RoomInfoDTO GetInfo()
@@ -32,12 +49,16 @@ namespace FunBoardGames.App.GameRooms
             };
         }
 
-        public override IEnumerable<UserProfileDTO> GetPlayers()
+        public override IEnumerable<PlayerInfoDTO> GetPlayers()
         {
-            return players.Select(player => new UserProfileDTO
+            return players.Select(player => new PlayerInfoDTO
             {
-                PlayerName = player.Name,
-                ConnectionId = player.ConnectionId,
+                UserProfile = new UserProfileDTO
+                {
+                    PlayerName = player.Name,
+                    ConnectionId = player.ConnectionId,
+                },
+                IsReady = player.IsReady,
             });
         }
 
