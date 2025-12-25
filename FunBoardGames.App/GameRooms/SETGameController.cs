@@ -1,12 +1,41 @@
 ﻿
 using FunBoardGames.Network.SignalR.Shared;
+using FunBoardGames.Network.SignalR.Shared.SET;
 
 namespace FunBoardGames.App.GameRooms
 {
     public class SETGameController : GameController
     {
+        private static List<SETCardDTO> SETCardData;
+
+
         List<SETGamePlayer> players = [];
         int minPlayers = 2;
+        byte[] cards;
+        int cardCursor = 0;
+        List<SETCardDTO> placedCards = [];
+
+        static SETGameController()
+        {
+            SETCardData = new(81);
+            for (byte i = 0; i < 3; i++)
+            {
+                for (byte j = 0; j < 3; j++)
+                {
+                    for (byte k = 0; k < 3; k++)
+                    {
+                        for (byte l = 0; l < 3; l++)
+                            SETCardData.Add(new SETCardDTO
+                            {
+                                Color = i,
+                                CountIndex = j,
+                                Shape = k,
+                                Shading = l,
+                            });
+                    }
+                }
+            }
+        }
 
         public SETGameController(string roomName, int id) : base(roomName, id)
         {
@@ -66,6 +95,44 @@ namespace FunBoardGames.App.GameRooms
         {
             var player = players.FirstOrDefault(player=>player.ConnectionId == connectionId);
             return players.Remove(player);
+        }
+
+        internal bool SetGameLoaded(string connectionId)
+        {
+            var player = players.FirstOrDefault(p => p.ConnectionId == connectionId);
+            player.SetLoaded();
+
+            return players.All(player => player.IsGameLoaded);
+        }
+
+        internal void PrepareGame()
+        {
+            cards = GetRandomByteList(81);
+        }
+
+        internal List<SETCardDTO> DestributeCards(int cardAmount)
+        {
+            List<SETCardDTO> newCards = new(cardAmount);
+
+            for (int i = 0; i < cardAmount; i++) 
+            {
+                var cardDTO = SETCardData[cards[cardCursor]];
+                newCards.Add(cardDTO);
+                cardCursor++;
+            }
+            
+            placedCards.AddRange(newCards);
+
+            return newCards;
+        }
+
+        static byte[] GetRandomByteList(int n)
+        {
+            byte[] bytes = new byte[n];
+            for (int i = 0; i < n; i++)
+                bytes[i] = (byte)i;
+            System.Random r = new System.Random();
+            return bytes.OrderBy(x => r.Next()).ToArray();
         }
     }
 }

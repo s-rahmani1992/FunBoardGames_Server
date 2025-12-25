@@ -2,6 +2,7 @@
 using FunBoardGames.App.Services;
 using FunBoardGames.App.GameRooms;
 using FunBoardGames.Network.SignalR.Shared;
+using FunBoardGames.Network.SignalR.Shared.SET;
 
 namespace FunBoardGames.App
 {
@@ -172,6 +173,30 @@ namespace FunBoardGames.App
                     var lobbyService = _provider.GetRequiredService<LobbyService>();
                     lobbyService.RemoveGame(gameController);
                 }
+            }
+        }
+
+        #endregion
+
+        #region SET Game
+
+        [HubMethodName(SETGameMessageNames.GameLoaded)]
+        public async Task SignalGameLoaded()
+        {
+            SETGameController setController = Context.Items["room"] as SETGameController;
+
+            bool allPlayersLoaded = setController.SetGameLoaded(Context.ConnectionId);
+
+            if (allPlayersLoaded)
+            {
+                setController.PrepareGame();
+                var newCards = setController.DestributeCards(12);
+
+                await Task.Delay(4000);
+                await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.DistributeCards, new DistributeNewCardsMessage
+                {
+                    NewCards = newCards,
+                });
             }
         }
 
