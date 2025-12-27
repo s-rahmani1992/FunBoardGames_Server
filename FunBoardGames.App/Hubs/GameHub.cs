@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using FunBoardGames.App.GameRooms;
 using FunBoardGames.App.Services;
-using FunBoardGames.App.GameRooms;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.SET;
+using Microsoft.AspNetCore.SignalR;
 
 namespace FunBoardGames.App
 {
@@ -193,6 +193,45 @@ namespace FunBoardGames.App
                 var newCards = setController.DestributeCards(12);
 
                 await Task.Delay(4000);
+                await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.DistributeCards, new DistributeNewCardsMessage
+                {
+                    NewCards = newCards,
+                });
+            }
+        }
+
+        [HubMethodName(SETGameMessageNames.PlayerGuessStart)]
+        public async Task PlayerStartGuess()
+        {
+            SETGameController setController = Context.Items["room"] as SETGameController;
+            await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.PlayerGuessStart, new PlayerGuessStartMessage
+            {
+                ConnectionId = Context.ConnectionId,
+            });
+
+            var player = await setController.StartGuessProcess(Context.ConnectionId, Clients.Group(setController.GroupKey));
+        }
+
+        [HubMethodName(SETGameMessageNames.PlayerGuess)]
+        public async Task ProcessGuess(PlayerCardGuessRequest cardGuessMsg)
+        {
+            SETGameController setController = Context.Items["room"] as SETGameController;
+            SETGamePlayer player;
+            bool isCorrect = setController.ProcessGuess(Context.ConnectionId, cardGuessMsg.GuessedCards, out player);
+            await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.PlayerGuess, new GuessResultResponse
+            {
+                ConnectionId = Context.ConnectionId,
+                GuessedCorrect = isCorrect,
+                WrongScore = player.WrongScore,
+                CorrectScore = player.CorrectScore,
+                GuessedCards = cardGuessMsg.GuessedCards,
+            });
+
+            if (isCorrect)
+            {
+                await Task.Delay(5000);
+                var newCards = setController.DestributeCards(3);
+
                 await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.DistributeCards, new DistributeNewCardsMessage
                 {
                     NewCards = newCards,

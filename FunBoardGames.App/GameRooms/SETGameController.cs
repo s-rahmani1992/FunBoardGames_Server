@@ -1,6 +1,8 @@
 ﻿
+using FunBoardGames.App.SETGame;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.SET;
+using Microsoft.AspNetCore.SignalR;
 
 namespace FunBoardGames.App.GameRooms
 {
@@ -14,6 +16,10 @@ namespace FunBoardGames.App.GameRooms
         byte[] cards;
         int cardCursor = 0;
         List<SETCardDTO> placedCards = [];
+
+        CancellationTokenSource guessCancelTokenSource;
+
+        const int guessTime = 7000;
 
         static SETGameController()
         {
@@ -133,6 +139,46 @@ namespace FunBoardGames.App.GameRooms
                 bytes[i] = (byte)i;
             System.Random r = new System.Random();
             return bytes.OrderBy(x => r.Next()).ToArray();
+        }
+
+        internal async Task<SETGamePlayer> StartGuessProcess(string connectionId, IClientProxy clientGroup)
+        {
+            guessCancelTokenSource?.Cancel();
+            guessCancelTokenSource = new CancellationTokenSource();
+            var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(guessTime, guessCancelTokenSource.Token);
+                    player.AddWrongScore();
+                    await clientGroup.SendAsync(SETGameMessageNames.PlayerGuess, new GuessResultResponse
+                    {
+                        ConnectionId = player.ConnectionId,
+                        GuessedCorrect = false,
+                        WrongScore = player.WrongScore,
+                        CorrectScore = player.CorrectScore,
+                        GuessedCards = null,
+                    });
+                }
+                catch (OperationCanceledException) { }
+            });
+            
+            return player;
+        }
+
+        internal bool ProcessGuess(string connectionId, List<SETCardDTO> guessCards, out SETGamePlayer player)
+        {
+            guessCancelTokenSource.Cancel();
+            player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+            bool isCorrect = SETGameUtilities.IsSET(guessCards[0], guessCards[1], guessCards[2]);
+            if (isCorrect)
+                player.AddCorrectScore();
+            else
+                player.AddWrongScore();
+
+            return isCorrect;
+                
         }
     }
 }

@@ -7,6 +7,20 @@ namespace FunBoardGames.App.GameRooms
         public string ConnectionId { get; set; }
         public bool IsReady { get; set; } = false;
         public bool IsGameLoaded { get; set; }
+        public int WrongScore { get; set; } = 0;
+        public int CorrectScore { get; set; } = 0;
+
+        public int AddWrongScore(int score = 1)
+        {
+            WrongScore += score;
+            return WrongScore;
+        }
+
+        public int AddCorrectScore(int score = 1)
+        {
+            CorrectScore += score;
+            return CorrectScore;
+        }
 
         public SETGamePlayer(string name, string connectionId)
         {
