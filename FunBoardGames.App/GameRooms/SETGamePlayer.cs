@@ -9,6 +9,7 @@ namespace FunBoardGames.App.GameRooms
         public bool IsGameLoaded { get; set; }
         public int WrongScore { get; set; } = 0;
         public int CorrectScore { get; set; } = 0;
+        public bool? IsVotePositive { get; set; }
 
         public int AddWrongScore(int score = 1)
         {
@@ -20,6 +21,11 @@ namespace FunBoardGames.App.GameRooms
         {
             CorrectScore += score;
             return CorrectScore;
+        }
+
+        public void SetVote(bool? isPositive)
+        {
+            IsVotePositive = isPositive;
         }
 
         public SETGamePlayer(string name, string connectionId)

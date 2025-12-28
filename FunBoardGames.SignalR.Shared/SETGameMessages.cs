@@ -9,6 +9,9 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
         public const string DistributeCards = "SET_DistributeCards";
         public const string PlayerGuessStart = "PlayerGuessStart";
         public const string PlayerGuess = "PlayerGuessResult";
+        public const string PlayerStartCardVote = "PlayerStartCardVote";
+        public const string PlayerCardVote = "PlayerCardVote";
+        public const string CardVoteResult = "CardVoteResult";
     }
 
     public class SETCardDTO
@@ -17,9 +20,20 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
         public byte Shape { get; set; }
         public byte CountIndex { get; set; }
         public byte Shading { get; set; }
+
+        public override bool Equals(object card)
+        {
+            SETCardDTO otherCard = card as SETCardDTO;
+
+            return Color == otherCard.Color &&
+                Shape == otherCard.Shape &&
+                CountIndex == otherCard.CountIndex &&
+                Shading == otherCard.Shading;
+            
+        }
     }
 
-    public class  DistributeNewCardsMessage
+    public class DistributeNewCardsMessage
     {
         public List<SETCardDTO> NewCards { get; set; }
     }
@@ -41,5 +55,26 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
         public int CorrectScore { get; set; }
         public int WrongScore { get; set; }
         public List<SETCardDTO>? GuessedCards { get; set; } = null;
+    }
+
+    public class PlayerStartedVoteResponse
+    {
+        public string ConnectionId { get; set; }
+    }
+
+    public class PlayerVoteRequest
+    {
+        public bool Vote { get; set; }
+    }
+
+    public class PlayerVoteResponse
+    {
+        public string ConnectionId { get; set; }
+        public bool IsVoteYes { get; set; }
+    }
+
+    public class VoteResultResponse
+    {
+        public bool VotePassed { get; set; }
     }
 }

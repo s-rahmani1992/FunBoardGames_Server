@@ -10,7 +10,6 @@ namespace FunBoardGames.App.GameRooms
     {
         private static List<SETCardDTO> SETCardData;
 
-
         List<SETGamePlayer> players = [];
         int minPlayers = 2;
         byte[] cards;
@@ -20,6 +19,20 @@ namespace FunBoardGames.App.GameRooms
         CancellationTokenSource guessCancelTokenSource;
 
         const int guessTime = 7000;
+
+        public override int PlayerCount => players.Count();
+
+        public override bool AllPlayersReady
+        {
+            get
+            {
+                int readyCount = players.Where(player => player.IsReady).Count();
+
+                return readyCount == players.Count && players.Count >= minPlayers;
+            }
+        }
+
+        public bool HasEnoughCards => (cardCursor >= 80 || placedCards.Count >= 12);
 
         static SETGameController()
         {
@@ -46,18 +59,6 @@ namespace FunBoardGames.App.GameRooms
         public SETGameController(string roomName, int id) : base(roomName, id)
         {
             GroupKey = "SET_" + RoomId;
-        }
-
-        public override int PlayerCount => players.Count();
-
-        public override bool AllPlayersReady 
-        {
-            get
-            {
-                int readyCount = players.Where(player => player.IsReady).Count();
-
-                return readyCount == players.Count && players.Count >= minPlayers;
-            }
         }
 
         public override bool AddPlayer(string connectionId, string playerName)
@@ -173,12 +174,39 @@ namespace FunBoardGames.App.GameRooms
             player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
             bool isCorrect = SETGameUtilities.IsSET(guessCards[0], guessCards[1], guessCards[2]);
             if (isCorrect)
+            {
                 player.AddCorrectScore();
+
+                foreach(var guessCard in guessCards)
+                {
+                    int index = placedCards.FindIndex((card) => card.Equals(guessCard));
+                    placedCards.RemoveAt(index);
+                }
+            }
             else
                 player.AddWrongScore();
 
             return isCorrect;
                 
+        }
+
+        internal bool? ProcessCardVote(string connectionId, bool vote)
+        {
+            var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+            player.SetVote(vote);
+
+            int yesVote = players.Where(p => p.IsVotePositive == true).Count();
+            int noVote = players.Where(p => p.IsVotePositive == false).Count();
+
+            if(yesVote + noVote == players.Count())
+            {
+                foreach (var p in players)
+                    p.SetVote(null);
+
+                return yesVote >= noVote;
+            }
+
+            return null;
         }
     }
 }
