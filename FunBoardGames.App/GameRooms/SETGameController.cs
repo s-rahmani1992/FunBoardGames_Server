@@ -15,6 +15,7 @@ namespace FunBoardGames.App.GameRooms
         byte[] cards;
         int cardCursor = 0;
         List<SETCardDTO> placedCards = [];
+        List<SETCardDTO> hintCards = [];
 
         CancellationTokenSource guessCancelTokenSource;
 
@@ -32,7 +33,24 @@ namespace FunBoardGames.App.GameRooms
             }
         }
 
-        public bool HasEnoughCards => (cardCursor >= 80 || placedCards.Count >= 12);
+        public bool HasEnoughCards => (cardCursor >= SETCardData.Count() - 1 || placedCards.Count >= 12);
+
+        public List<SETPlayerResultDTO> GetFinalResults()
+        {
+            List<SETPlayerResultDTO> results = [];
+            foreach(var player in players)
+            {
+                results.Add(new SETPlayerResultDTO
+                {
+                    ConnectionId = player.ConnectionId,
+                    Corrects = player.CorrectScore,
+                    Wrongs = player.WrongScore,
+                });
+            }
+
+            results.Sort((a, b) => (b.Corrects - b.Wrongs).CompareTo(a.Corrects - a.Wrongs));
+            return results;
+        }
 
         static SETGameController()
         {
@@ -129,6 +147,8 @@ namespace FunBoardGames.App.GameRooms
             }
             
             placedCards.AddRange(newCards);
+            hintCards.Clear();
+            hintCards = SETGameUtilities.GetAvailableSET(placedCards).ToList();
 
             return newCards;
         }
@@ -207,6 +227,12 @@ namespace FunBoardGames.App.GameRooms
             }
 
             return null;
+        }
+
+        internal bool CheckAnySETOnTable()
+        {
+            hintCards = SETGameUtilities.GetAvailableSET(placedCards).ToList();
+            return hintCards.Count > 0;
         }
     }
 }

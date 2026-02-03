@@ -41,5 +41,27 @@ namespace FunBoardGames.App.SETGame
 
             return true;
         }
+
+        public static IEnumerable<SETCardDTO> GetAvailableSET(IEnumerable<SETCardDTO> cards)
+        {
+            var cardList = cards.ToList();
+            int count = cardList.Count;
+            for (int i = 0; i < count - 2; i++)
+            {
+                for (int j = i + 1; j < count - 1; j++)
+                {
+                    for (int k = j + 1; k < count; k++)
+                    {
+                        if (IsSET(cardList[i], cardList[j], cardList[k]))
+                        {
+                            yield return cardList[i];
+                            yield return cardList[j];
+                            yield return cardList[k];
+                            yield break;
+                        }
+                    }
+                }
+            }
+        }
     }
 }

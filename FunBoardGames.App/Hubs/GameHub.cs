@@ -227,15 +227,29 @@ namespace FunBoardGames.App
                 GuessedCards = cardGuessMsg.GuessedCards,
             });
 
-            if (isCorrect && setController.HasEnoughCards == false)
+            if (isCorrect)
             {
                 await Task.Delay(5000);
-                var newCards = setController.DestributeCards(3);
 
-                await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.DistributeCards, new DistributeNewCardsMessage
+                if(setController.HasEnoughCards == false)
                 {
-                    NewCards = newCards,
-                });
+                    var newCards = setController.DestributeCards(3);
+
+                    await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.DistributeCards, new DistributeNewCardsMessage
+                    {
+                        NewCards = newCards,
+                    });
+                }
+                else if (setController.CheckAnySETOnTable() == false)
+                {
+                    await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.GameEnded, new GameEndedMessage
+                    {
+                        FinalScores = setController.GetFinalResults(),
+                    });
+
+                    var lobbyService = _provider.GetRequiredService<LobbyService>();
+                    lobbyService.RemoveGame(setController);
+                }
             }
         }
 

@@ -7,11 +7,12 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
     {
         public const string GameLoaded = "SET_GameLoaded";
         public const string DistributeCards = "SET_DistributeCards";
-        public const string PlayerGuessStart = "PlayerGuessStart";
-        public const string PlayerGuess = "PlayerGuessResult";
-        public const string PlayerStartCardVote = "PlayerStartCardVote";
-        public const string PlayerCardVote = "PlayerCardVote";
-        public const string CardVoteResult = "CardVoteResult";
+        public const string PlayerGuessStart = "SET_PlayerGuessStart";
+        public const string PlayerGuess = "SET_PlayerGuessResult";
+        public const string PlayerStartCardVote = "SET_PlayerStartCardVote";
+        public const string PlayerCardVote = "SET_PlayerCardVote";
+        public const string CardVoteResult = "SET_CardVoteResult";
+        public const string GameEnded = "SET_GameEnded";
     }
 
     public class SETCardDTO
@@ -31,6 +32,13 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
                 Shading == otherCard.Shading;
             
         }
+    }
+
+    public class  SETPlayerResultDTO
+    {
+        public string ConnectionId { get; set; }
+        public int Corrects { get; set; }
+        public int Wrongs { get; set; }
     }
 
     public class DistributeNewCardsMessage
@@ -76,5 +84,10 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
     public class VoteResultResponse
     {
         public bool VotePassed { get; set; }
+    }
+
+    public class GameEndedMessage
+    {
+        public List<SETPlayerResultDTO> FinalScores { get; set; }
     }
 }
