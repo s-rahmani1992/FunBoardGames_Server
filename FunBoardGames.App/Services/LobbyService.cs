@@ -11,22 +11,22 @@ namespace FunBoardGames.App.Services
 
         int roomId = 0;
 
-        public GameController CreateGame(BoardGameType gameType, string roomName)
+        public GameController CreateGame(BoardGameType gameType, string roomName, bool straightMode = false)
         {
-            Interlocked.Increment(ref roomId);
+            int newGameId = straightMode ? -1 : Interlocked.Increment(ref roomId);
             GameController gameController;
 
             switch (gameType)
             {
                 case BoardGameType.SET:
-                    var setGame = new SETGameController(roomName, roomId);
+                    var setGame = new SETGameController(roomName, newGameId);
                     gameController = setGame;
-                    SETGames[roomId] = setGame;
+                    SETGames[newGameId] = setGame;
                     break;
                 case BoardGameType.CantStop:
-                    var cantStopGame = new CantStopGameController(roomName, roomId);
+                    var cantStopGame = new CantStopGameController(roomName, newGameId);
                     gameController = cantStopGame;
-                    CantStopGames[roomId] = cantStopGame;
+                    CantStopGames[newGameId] = cantStopGame;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(gameType), $"Unsupported game type: {gameType}");

@@ -150,6 +150,47 @@ namespace FunBoardGames.App
             }
         }
 
+        [HubMethodName(LobbyMessageNames.JoinStraightGame)]
+        public async Task JoinStraightGame(JoinStraightGameRequestMessage joinStraightGameMsg)
+        {
+            var lobbyService = _provider.GetRequiredService<LobbyService>();
+            GameController? gameController = lobbyService.GetGame(joinStraightGameMsg.Game, -1);
+
+            gameController ??= lobbyService.CreateGame(joinStraightGameMsg.Game, "Quick Game _ " + joinStraightGameMsg.Game, true);
+
+            gameController.AddPlayer(Context.ConnectionId, Context.Items["name"] as string);
+            Context.Items["room"] = gameController;
+            gameController.ChangeReady(Context.ConnectionId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, gameController.GroupKey);
+
+            await Clients.OthersInGroup(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerJoinRoom, new PlayerJoinRoomResponseMessage()
+            {
+                NewPlayer = new PlayerInfoDTO()
+                {
+                    UserProfile = new UserProfileDTO
+                    {
+                        ConnectionId = Context.ConnectionId,
+                        PlayerName = Context.Items["name"] as string,
+                    },
+                    IsReady = true,
+                },
+            });
+
+            await Clients.Caller.SendAsync(LobbyMessageNames.JoinRoom, new JoinRoomResponseMessage
+            {
+                Game = joinStraightGameMsg.Game,
+                RoomName = gameController.RoomName,
+                RoomId = gameController.RoomId,
+                JoinedPlayers = [.. gameController.GetPlayers()],
+            });
+
+            if(gameController.PlayerCount == 2 && gameController.AllPlayersReady)
+            {
+                await Task.Delay(1000);
+                await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.AllPlayersReady);
+            }
+        }
+
         async Task LeaveRoomInternal()
         {
             if (Context.Items["room"] != null)

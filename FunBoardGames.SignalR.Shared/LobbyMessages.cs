@@ -12,6 +12,7 @@ namespace FunBoardGames.Network.SignalR.Shared
         public const string PlayerLeave = "PlayerLeave";
         public const string PlayerReady = "PlayerReady";
         public const string AllPlayersReady = "AllPlayersReady";
+        public const string JoinStraightGame = "JoinStraightGame";
     }
 
     public enum BoardGameType
@@ -78,5 +79,10 @@ namespace FunBoardGames.Network.SignalR.Shared
     public class PlayerReadyResponseMessage 
     { 
         public string ConnectionId { get; set;} = string.Empty ;
+    }
+
+    public class JoinStraightGameRequestMessage
+    {
+        public BoardGameType Game { get; set; }
     }
 }
