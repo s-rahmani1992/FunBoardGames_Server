@@ -1,6 +1,7 @@
 ﻿using FunBoardGames.App.GameRooms;
 using FunBoardGames.App.Services;
 using FunBoardGames.Network.SignalR.Shared;
+using FunBoardGames.Network.SignalR.Shared.CantStop;
 using FunBoardGames.Network.SignalR.Shared.SET;
 using Microsoft.AspNetCore.SignalR;
 
@@ -335,6 +336,27 @@ namespace FunBoardGames.App
                         NewCards = cards,
                     });
                 }
+            }
+        }
+
+        #endregion
+
+        #region Cant Stop
+
+        [HubMethodName(CantStopGameMessageNames.GameLoaded)]
+        public async Task SignalCantStopGameLoaded()
+        {
+            CantStopGameController cantStopController = Context.Items["room"] as CantStopGameController;
+
+            bool allPlayersLoaded = cantStopController.SetGameLoaded(Context.ConnectionId);
+
+            if (allPlayersLoaded)
+            {
+                var boardData = cantStopController.GetBoardData();
+                await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.SendGameData, new GameDataMessage
+                {
+                    BoardData = boardData,
+                });
             }
         }
 
