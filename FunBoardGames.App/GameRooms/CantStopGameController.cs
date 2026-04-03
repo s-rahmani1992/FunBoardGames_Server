@@ -29,6 +29,10 @@ namespace FunBoardGames.App.GameRooms
         List<CantStopGamePlayer> players = [];
         int minPlayers = 2;
 
+        int currentPlayerIndex = 0;
+
+        int[] diceValues = new int[4];
+
         public override int PlayerCount => players.Count();
 
         public override bool AllPlayersReady
@@ -77,6 +81,11 @@ namespace FunBoardGames.App.GameRooms
             };
         }
 
+        public string GetCurrentPlayerConnectionId()
+        {
+            return players[currentPlayerIndex].ConnectionId;
+        }
+
         public override bool RemovePlayer(string connectionId)
         {
             var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
@@ -103,6 +112,17 @@ namespace FunBoardGames.App.GameRooms
             {
                 Columns = columnData,
             };
+        }
+
+        public int[] RollDice()
+        {
+            var random = new Random();
+            for (int i = 0; i < 4; i++)
+            {
+                diceValues[i] = random.Next(1, 7);
+            }
+
+            return diceValues;
         }
     }
 }

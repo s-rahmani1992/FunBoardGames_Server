@@ -6,6 +6,7 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
     {
         public const string GameLoaded = "CantStop_GameLoaded";
         public const string SendGameData = "CantStop_SendGameData";
+        public const string RollDice = "CantStop_RollDice";
     }
 
     public class CantStopBoardDTO
@@ -17,5 +18,10 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
     {
         public CantStopBoardDTO BoardData { get; set; }
         public string StartPlayerConnectionId { get; set; }
+    }
+
+    public class RollDiceMessage
+    {
+        public int[] diceValues { get; set; }
     }
 }
