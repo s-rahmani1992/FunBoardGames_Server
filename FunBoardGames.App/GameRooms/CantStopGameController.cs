@@ -28,8 +28,9 @@ namespace FunBoardGames.App.GameRooms
 
         List<CantStopGamePlayer> players = [];
         int minPlayers = 2;
-
+        SortedDictionary<int, int> whiteConePositions = new();
         int currentPlayerIndex = 0;
+        HashSet<int> FinishedColumns = new();
 
         int[] diceValues = new int[4];
 
@@ -123,6 +124,90 @@ namespace FunBoardGames.App.GameRooms
             }
 
             return diceValues;
+        }
+
+        public SortedDictionary<int, int> PlaceWhiteCone(PlaceWhiteConeRequestMessage request)
+        {
+            int sumDice1 = diceValues[request.DiceIndex1] + diceValues[request.DiceIndex2];
+            int sumDice2 = diceValues.Sum() - sumDice1;
+            SortedDictionary<int, int> result = new();
+
+            if (sumDice1 == sumDice2)
+            {
+                var move = GetPosibleMove(sumDice1, players[currentPlayerIndex]);
+
+                if(move == null || move.Value.pos >= columnData[sumDice1] - 2)
+                    return result;
+
+                whiteConePositions[sumDice1] = move.Value.pos + 1;
+                return new SortedDictionary<int, int>() { {sumDice1, move.Value.pos + 1 } };
+            }
+
+            SortedDictionary<int, (int pos, int cone)?> possibleMoves = new();
+
+            (int pos, int cone)? move1 = GetPosibleMove(sumDice1, players[currentPlayerIndex]);
+            (int pos, int cone)? move2 = GetPosibleMove(sumDice2, players[currentPlayerIndex]);
+            possibleMoves[sumDice1] = move1;
+            possibleMoves[sumDice2] = move2;
+
+            if (move1 == null && move2 == null)
+                return result;
+
+
+            int newWhiteCones = (move1 != null ? move1.Value.cone : 0) + (move2 != null ? move2.Value.cone : 0);
+
+            bool mustSelectMoves = newWhiteCones + whiteConePositions.Count() > 3;
+
+            if (mustSelectMoves)
+            {
+                if(possibleMoves[request.Selectedcolumn.Value] != null)
+                {
+                    whiteConePositions[request.Selectedcolumn.Value] = possibleMoves[request.Selectedcolumn.Value].Value.pos;
+                    result[request.Selectedcolumn.Value] = possibleMoves[request.Selectedcolumn.Value].Value.pos;
+                    return result;
+                }
+            }
+            
+            if(move1 != null)
+            {
+                whiteConePositions[sumDice1] = move1.Value.pos;
+                result[sumDice1] = move1.Value.pos;
+            }
+
+            if(move2 != null)
+            {
+                whiteConePositions[sumDice2] = move2.Value.pos;
+                result[sumDice2] = move2.Value.pos;
+            }
+
+            return result;
+        }
+
+        (int pos, int cone)? GetPosibleMove(int columnNumber, CantStopGamePlayer player)
+        {
+            if (FinishedColumns.Contains(columnNumber))
+                return null;
+
+            int whiteConePos = -1;
+            int newCone = 0;
+
+            if (whiteConePositions.TryGetValue(columnNumber, out whiteConePos) == false) // new white cone required
+            {
+                if (whiteConePositions.Count() >= 3) // Check if we run out of white cones
+                    return null;
+
+                newCone = 1;
+                if (player.ConePositions.TryGetValue(columnNumber, out whiteConePos) == false)
+                    whiteConePos = -1;
+            }
+
+            if (whiteConePos == -1)
+                return (0, 1);
+
+            if (whiteConePos >= columnData[columnNumber] - 1) // the cone is at 1 cell to the top
+                return null;
+
+            return (whiteConePos + 1, newCone);
         }
     }
 }

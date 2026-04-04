@@ -7,6 +7,10 @@
         public bool IsReady { get; set; } = false;
         public bool IsGameLoaded { get; set; }
 
+        SortedDictionary<int, int> conePositions = new();
+
+        public SortedDictionary<int, int> ConePositions => conePositions;
+
         public CantStopGamePlayer(string name, string connectionId)
         {
             Name = name;

@@ -375,6 +375,25 @@ namespace FunBoardGames.App
             });
         }
 
+        [HubMethodName(CantStopGameMessageNames.PlaceWhiteCone)]
+        public async Task PlaceWhiteCone(PlaceWhiteConeRequestMessage placeConeMsg)
+        {
+            CantStopGameController cantStopController = Context.Items["room"] as CantStopGameController;
+            if (cantStopController.GetCurrentPlayerConnectionId() != Context.ConnectionId)
+                return;
+            var moveResult = cantStopController.PlaceWhiteCone(placeConeMsg);
+            if (moveResult.Count() > 0)
+            {
+                await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.PlaceWhiteCone, new PlaceWhiteConeResponseMessage
+                {
+                    DiceIndex1 = placeConeMsg.DiceIndex1,
+                    DiceIndex2 = placeConeMsg.DiceIndex2,
+                    PlayerConnectionId = Context.ConnectionId,
+                    UpdatedColumns = moveResult,
+                });
+            }
+        }
+
         #endregion
     }
 }
