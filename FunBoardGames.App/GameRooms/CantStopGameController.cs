@@ -209,5 +209,25 @@ namespace FunBoardGames.App.GameRooms
 
             return (whiteConePos + 1, newCone);
         }
+
+        public string UpdatePlayerCone()
+        {
+            var player = players[currentPlayerIndex];
+            foreach (var whiteCone in whiteConePositions)
+            {
+                int columnNumber = whiteCone.Key;
+                int newPos = whiteCone.Value;
+                
+                player.ConePositions[columnNumber] = newPos;
+                if (newPos >= columnData[columnNumber])
+                {
+                    FinishedColumns.Add(columnNumber);
+                }
+            }
+
+            whiteConePositions.Clear();
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
+            return players[currentPlayerIndex].ConnectionId;
+        }
     }
 }

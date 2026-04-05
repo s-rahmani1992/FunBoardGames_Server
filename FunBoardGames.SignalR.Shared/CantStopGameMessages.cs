@@ -8,6 +8,7 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
         public const string SendGameData = "CantStop_SendGameData";
         public const string RollDice = "CantStop_RollDice";
         public const string PlaceWhiteCone = "CantStop_PlaceWhiteCone";
+        public const string PlayRound = "CantStop_PlayRound";
     }
 
     public class CantStopBoardDTO
@@ -39,5 +40,14 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
         public int DiceIndex1 { get; set; }
         public int DiceIndex2 { get; set; }
         public SortedDictionary<int, int> UpdatedColumns { get; set; }
+    }
+
+    public class PlayRoundResponseMessage
+    {
+        public string PlayerConnectionId { get; set; }
+        public int DiceIndex1 { get; set; }
+        public int DiceIndex2 { get; set; }
+        public SortedDictionary<int, int> UpdatedColumns { get; set; }
+        public string NextPlayerConnectionId { get; set; }
     }
 }
