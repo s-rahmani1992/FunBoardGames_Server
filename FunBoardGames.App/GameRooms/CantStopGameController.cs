@@ -136,11 +136,11 @@ namespace FunBoardGames.App.GameRooms
             {
                 var move = GetPosibleMove(sumDice1, players[currentPlayerIndex]);
 
-                if(move == null || move.Value.pos >= columnData[sumDice1] - 2)
+                if (move == null || move.Value.pos >= columnData[sumDice1] - 1)
                     return result;
 
                 whiteConePositions[sumDice1] = move.Value.pos + 1;
-                return new SortedDictionary<int, int>() { {sumDice1, move.Value.pos + 1 } };
+                return new SortedDictionary<int, int>() { { sumDice1, move.Value.pos + 1 } };
             }
 
             SortedDictionary<int, (int pos, int cone)?> possibleMoves = new();
@@ -160,14 +160,14 @@ namespace FunBoardGames.App.GameRooms
 
             if (mustSelectMoves)
             {
-                if(possibleMoves[request.Selectedcolumn.Value] != null)
+                if (possibleMoves[request.Selectedcolumn.Value] != null)
                 {
                     whiteConePositions[request.Selectedcolumn.Value] = possibleMoves[request.Selectedcolumn.Value].Value.pos;
                     result[request.Selectedcolumn.Value] = possibleMoves[request.Selectedcolumn.Value].Value.pos;
                     return result;
                 }
             }
-            
+
             if(move1 != null)
             {
                 whiteConePositions[sumDice1] = move1.Value.pos;
@@ -217,7 +217,7 @@ namespace FunBoardGames.App.GameRooms
             {
                 int columnNumber = whiteCone.Key;
                 int newPos = whiteCone.Value;
-                
+
                 player.ConePositions[columnNumber] = newPos;
                 if (newPos >= columnData[columnNumber])
                 {
@@ -225,6 +225,45 @@ namespace FunBoardGames.App.GameRooms
                 }
             }
 
+            whiteConePositions.Clear();
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
+            return players[currentPlayerIndex].ConnectionId;
+        }
+
+        public bool IsBusted()
+        {
+            var player = players[currentPlayerIndex];
+
+            int sumDice1 = diceValues[0] + diceValues[1];
+            int sumDice2 = diceValues[2] + diceValues[3];
+            bool sum1Valid = GetPosibleMove(sumDice1, player) != null;
+            bool sum2Valid = GetPosibleMove(sumDice2, player) != null;
+
+            if (sum1Valid || sum2Valid)
+                return false;
+
+            sumDice1 = diceValues[0] + diceValues[2];
+            sumDice2 = diceValues[1] + diceValues[3];
+            sum1Valid = GetPosibleMove(sumDice1, player) != null;
+            sum2Valid = GetPosibleMove(sumDice2, player) != null;
+
+            if (sum1Valid || sum2Valid)
+                return false;
+
+            sumDice1 = diceValues[0] + diceValues[3];
+            sumDice2 = diceValues[1] + diceValues[2];
+            sum1Valid = GetPosibleMove(sumDice1, player) != null;
+            sum2Valid = GetPosibleMove(sumDice2, player) != null;
+
+            if (sum1Valid || sum2Valid)
+                return false;
+
+
+            return true;
+        }
+
+        public string EndRound()
+        {
             whiteConePositions.Clear();
             currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
             return players[currentPlayerIndex].ConnectionId;

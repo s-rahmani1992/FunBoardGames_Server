@@ -372,6 +372,7 @@ namespace FunBoardGames.App
             await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.RollDice, new RollDiceMessage
             {
                 diceValues = diceValues,
+                IsBusted = cantStopController.IsBusted(),
             });
         }
 
@@ -409,6 +410,21 @@ namespace FunBoardGames.App
                 DiceIndex2 = placeConeMsg.DiceIndex2,
                 PlayerConnectionId = Context.ConnectionId,
                 UpdatedColumns = moveResult,
+                NextPlayerConnectionId = nextId,
+            });
+        }
+
+        [HubMethodName(CantStopGameMessageNames.EndRound)]
+        public async Task EndRound()
+        {
+            CantStopGameController cantStopController = Context.Items["room"] as CantStopGameController;
+            if (cantStopController.GetCurrentPlayerConnectionId() != Context.ConnectionId)
+                return;
+
+            var nextId = cantStopController.EndRound();
+            await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.EndRound, new EndRoundResponseMessage
+            {
+                PlayerConnectionId = Context.ConnectionId,
                 NextPlayerConnectionId = nextId,
             });
         }
