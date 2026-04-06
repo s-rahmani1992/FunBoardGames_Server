@@ -6,6 +6,7 @@
         public string ConnectionId { get; set; }
         public bool IsReady { get; set; } = false;
         public bool IsGameLoaded { get; set; }
+        public int Score { get; set; } = 0;
 
         SortedDictionary<int, int> conePositions = new();
 
@@ -25,6 +26,11 @@
         internal void SetLoaded()
         {
             IsGameLoaded = true;
+        }
+
+        internal void AddScore(int score)
+        {
+            Score += score;
         }
     }
 }

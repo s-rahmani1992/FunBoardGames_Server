@@ -396,14 +396,14 @@ namespace FunBoardGames.App
         }
 
         [HubMethodName(CantStopGameMessageNames.PlayRound)]
-        public async Task PlaceRound(PlaceWhiteConeRequestMessage placeConeMsg)
+        public async Task PlayRound(PlaceWhiteConeRequestMessage placeConeMsg)
         {
             CantStopGameController cantStopController = Context.Items["room"] as CantStopGameController;
             if (cantStopController.GetCurrentPlayerConnectionId() != Context.ConnectionId)
                 return;
             var moveResult = cantStopController.PlaceWhiteCone(placeConeMsg);
             var nextId = cantStopController.UpdatePlayerCone();
-
+            var player = cantStopController.GetPlayerByConnectionId(Context.ConnectionId);
             await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.PlayRound, new PlayRoundResponseMessage
             {
                 DiceIndex1 = placeConeMsg.DiceIndex1,
@@ -411,6 +411,9 @@ namespace FunBoardGames.App
                 PlayerConnectionId = Context.ConnectionId,
                 UpdatedColumns = moveResult,
                 NextPlayerConnectionId = nextId,
+                FinalScore = player.Score,
+                FinishedColumns = cantStopController.FinishedColumns,
+                playerCones = player.ConePositions,
             });
         }
 

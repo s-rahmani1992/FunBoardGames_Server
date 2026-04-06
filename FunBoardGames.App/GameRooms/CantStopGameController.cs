@@ -30,7 +30,7 @@ namespace FunBoardGames.App.GameRooms
         int minPlayers = 2;
         SortedDictionary<int, int> whiteConePositions = new();
         int currentPlayerIndex = 0;
-        HashSet<int> FinishedColumns = new();
+        public HashSet<int> FinishedColumns = new();
 
         int[] diceValues = new int[4];
 
@@ -219,8 +219,9 @@ namespace FunBoardGames.App.GameRooms
                 int newPos = whiteCone.Value;
 
                 player.ConePositions[columnNumber] = newPos;
-                if (newPos >= columnData[columnNumber])
+                if(newPos >= columnData[columnNumber] - 1)
                 {
+                    player.AddScore(1);
                     FinishedColumns.Add(columnNumber);
                 }
             }
@@ -267,6 +268,11 @@ namespace FunBoardGames.App.GameRooms
             whiteConePositions.Clear();
             currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
             return players[currentPlayerIndex].ConnectionId;
+        }
+
+        public CantStopGamePlayer GetPlayerByConnectionId(string connectionId)
+        {
+            return players.FirstOrDefault(player => player.ConnectionId == connectionId);
         }
     }
 }

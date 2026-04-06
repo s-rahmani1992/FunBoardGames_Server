@@ -51,6 +51,9 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
         public int DiceIndex2 { get; set; }
         public SortedDictionary<int, int> UpdatedColumns { get; set; }
         public string NextPlayerConnectionId { get; set; }
+        public int FinalScore { get; set; }
+        public HashSet<int> FinishedColumns { get; set; }
+        public SortedDictionary<int, int> playerCones { get; set; }
     }
 
     public class EndRoundResponseMessage
