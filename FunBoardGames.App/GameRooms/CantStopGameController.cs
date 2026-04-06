@@ -168,13 +168,13 @@ namespace FunBoardGames.App.GameRooms
                 }
             }
 
-            if(move1 != null)
+            if (move1 != null)
             {
                 whiteConePositions[sumDice1] = move1.Value.pos;
                 result[sumDice1] = move1.Value.pos;
             }
 
-            if(move2 != null)
+            if (move2 != null)
             {
                 whiteConePositions[sumDice2] = move2.Value.pos;
                 result[sumDice2] = move2.Value.pos;
@@ -219,7 +219,7 @@ namespace FunBoardGames.App.GameRooms
                 int newPos = whiteCone.Value;
 
                 player.ConePositions[columnNumber] = newPos;
-                if(newPos >= columnData[columnNumber] - 1)
+                if (newPos >= columnData[columnNumber] - 1)
                 {
                     player.AddScore(1);
                     FinishedColumns.Add(columnNumber);
@@ -273,6 +273,20 @@ namespace FunBoardGames.App.GameRooms
         public CantStopGamePlayer GetPlayerByConnectionId(string connectionId)
         {
             return players.FirstOrDefault(player => player.ConnectionId == connectionId);
+        }
+
+        public bool IsFinished()
+        {
+            return players.Any(player => player.Score >= 3);
+        }
+
+        public List<PlayerScoreDTO> GetPlayerScores()
+        {
+            return players.OrderByDescending(player => player.Score).Select(player => new PlayerScoreDTO
+            {
+                PlayerConnectionId = player.ConnectionId,
+                Score = player.Score,
+            }).ToList();
         }
     }
 }

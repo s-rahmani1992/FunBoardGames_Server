@@ -415,6 +415,17 @@ namespace FunBoardGames.App
                 FinishedColumns = cantStopController.FinishedColumns,
                 playerCones = player.ConePositions,
             });
+
+            if(cantStopController.IsFinished())
+            {
+                await Task.Delay(1000);
+                await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.GameFinished, new GameFinishedResponseMessage
+                {
+                    PlayerScores = cantStopController.GetPlayerScores(),
+                });
+                var lobbyService = _provider.GetRequiredService<LobbyService>();
+                lobbyService.RemoveGame(cantStopController);
+            }
         }
 
         [HubMethodName(CantStopGameMessageNames.EndRound)]

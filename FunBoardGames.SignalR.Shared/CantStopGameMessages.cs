@@ -10,11 +10,18 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
         public const string PlaceWhiteCone = "CantStop_PlaceWhiteCone";
         public const string PlayRound = "CantStop_PlayRound";
         public const string EndRound = "CantStop_EndRound";
+        public const string GameFinished = "CantStop_GameFinished";
     }
 
     public class CantStopBoardDTO
     {
         public Dictionary<int, int> Columns { get; set; }
+    }
+
+    public class PlayerScoreDTO
+    {
+        public string PlayerConnectionId { get; set; }
+        public int Score { get; set; }
     }
 
     public class GameDataMessage
@@ -60,5 +67,10 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
     {
         public string PlayerConnectionId { get; set; }
         public string NextPlayerConnectionId { get; set; }
+    }
+
+    public class GameFinishedResponseMessage
+    {
+        public List<PlayerScoreDTO> PlayerScores { get; set; }
     }
 }
