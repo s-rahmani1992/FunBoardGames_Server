@@ -11,7 +11,7 @@ namespace FunBoardGames.App
 {
     public class GameHub : Hub
     {
-        static HashSet<string> connectedUsers = [];
+        static List<string> connectedUsers = [];
 
         private readonly IServiceProvider _provider;
 
@@ -40,26 +40,17 @@ namespace FunBoardGames.App
         [HubMethodName(AuthenticationMessageNames.Login)]
         public async Task LoginRequest(LoginRequestMessage loginMsg)
         {
-            if(connectedUsers.Add(loginMsg.PlayerName))
+            connectedUsers.Add(loginMsg.PlayerName);
+            await Clients.Caller.SendAsync(AuthenticationMessageNames.Login, new LoginResponseMessage
             {
-                await Clients.Caller.SendAsync(AuthenticationMessageNames.Login, new LoginResponseMessage { 
-                    Success = true,
-                    Profile = new()
-                    {
-                        PlayerName = loginMsg.PlayerName,
-                        ConnectionId = Context.ConnectionId,
-                    },  
-                });
-                Context.Items["name"] = loginMsg.PlayerName;
-            }
-            else
-            {
-                await Clients.Caller.SendAsync(AuthenticationMessageNames.Login, new LoginResponseMessage
-                { 
-                    Success = false, 
-                    ErrorMessage = "Username already taken.", 
-                });
-            }
+                Success = true,
+                Profile = new()
+                {
+                    PlayerName = loginMsg.PlayerName,
+                    ConnectionId = Context.ConnectionId,
+                },
+            });
+            Context.Items["name"] = loginMsg.PlayerName;
         }
 
         #endregion
