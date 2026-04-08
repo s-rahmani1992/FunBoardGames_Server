@@ -1,17 +1,14 @@
-﻿
-using FunBoardGames.App.SETGame;
+﻿using FunBoardGames.App.Core;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.SET;
 using Microsoft.AspNetCore.SignalR;
 
-namespace FunBoardGames.App.GameRooms
+namespace FunBoardGames.App.SETGame
 {
-    public class SETGameController : GameController
+    public class SETGameController : GameControllerT<SETGamePlayer>
     {
         private static List<SETCardDTO> SETCardData;
 
-        List<SETGamePlayer> players = [];
-        int minPlayers = 2;
         byte[] cards;
         int cardCursor = 0;
         List<SETCardDTO> placedCards = [];
@@ -21,19 +18,7 @@ namespace FunBoardGames.App.GameRooms
 
         const int guessTime = 7000;
 
-        public override int PlayerCount => players.Count();
-
-        public override bool AllPlayersReady
-        {
-            get
-            {
-                int readyCount = players.Where(player => player.IsReady).Count();
-
-                return readyCount == players.Count && players.Count >= minPlayers;
-            }
-        }
-
-        public bool HasEnoughCards => (cardCursor >= SETCardData.Count() - 1 || placedCards.Count >= 12);
+        public bool HasEnoughCards => cardCursor >= SETCardData.Count() - 1 || placedCards.Count >= 12;
 
         public List<SETPlayerResultDTO> GetFinalResults()
         {
@@ -79,18 +64,6 @@ namespace FunBoardGames.App.GameRooms
             GroupKey = "SET_" + RoomId;
         }
 
-        public override bool AddPlayer(string connectionId, string playerName)
-        {
-            players.Add(new SETGamePlayer(playerName, connectionId));
-            return true;
-        }
-
-        public override void ChangeReady(string connectionId)
-        {
-            var p = players.FirstOrDefault(player => player.ConnectionId ==  connectionId);
-            p?.SetReady(true);
-        }
-
         public override RoomInfoDTO GetInfo()
         {
             return new RoomInfoDTO
@@ -101,33 +74,6 @@ namespace FunBoardGames.App.GameRooms
                 PlayerCount = players.Count(),
                 Name = RoomName,
             };
-        }
-
-        public override IEnumerable<PlayerInfoDTO> GetPlayers()
-        {
-            return players.Select(player => new PlayerInfoDTO
-            {
-                UserProfile = new UserProfileDTO
-                {
-                    PlayerName = player.Name,
-                    ConnectionId = player.ConnectionId,
-                },
-                IsReady = player.IsReady,
-            });
-        }
-
-        public override bool RemovePlayer(string connectionId)
-        {
-            var player = players.FirstOrDefault(player=>player.ConnectionId == connectionId);
-            return players.Remove(player);
-        }
-
-        internal bool SetGameLoaded(string connectionId)
-        {
-            var player = players.FirstOrDefault(p => p.ConnectionId == connectionId);
-            player.SetLoaded();
-
-            return players.All(player => player.IsGameLoaded);
         }
 
         internal void PrepareGame()
@@ -158,7 +104,7 @@ namespace FunBoardGames.App.GameRooms
             byte[] bytes = new byte[n];
             for (int i = 0; i < n; i++)
                 bytes[i] = (byte)i;
-            System.Random r = new System.Random();
+            Random r = new Random();
             return bytes.OrderBy(x => r.Next()).ToArray();
         }
 

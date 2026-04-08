@@ -1,5 +1,7 @@
-﻿using FunBoardGames.App.GameRooms;
+﻿using FunBoardGames.App.Core;
+using FunBoardGames.App.CantStopGame;
 using FunBoardGames.App.Services;
+using FunBoardGames.App.SETGame;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.CantStop;
 using FunBoardGames.Network.SignalR.Shared.SET;
@@ -139,7 +141,7 @@ namespace FunBoardGames.App
         public async Task PlayerReady()
         {
             GameController gameController = Context.Items["room"] as GameController;
-            gameController.ChangeReady(Context.ConnectionId);
+            gameController.SetPlayerReady(Context.ConnectionId);
             await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerReady, new PlayerReadyResponseMessage
             {
                 ConnectionId = Context.ConnectionId,
@@ -161,7 +163,7 @@ namespace FunBoardGames.App
 
             gameController.AddPlayer(Context.ConnectionId, Context.Items["name"] as string);
             Context.Items["room"] = gameController;
-            gameController.ChangeReady(Context.ConnectionId);
+            gameController.SetPlayerReady(Context.ConnectionId);
             await Groups.AddToGroupAsync(Context.ConnectionId, gameController.GroupKey);
 
             await Clients.OthersInGroup(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerJoinRoom, new PlayerJoinRoomResponseMessage()
@@ -227,7 +229,7 @@ namespace FunBoardGames.App
         {
             SETGameController setController = Context.Items["room"] as SETGameController;
 
-            bool allPlayersLoaded = setController.SetGameLoaded(Context.ConnectionId);
+            bool allPlayersLoaded = setController.SetPlayerLoaded(Context.ConnectionId);
 
             if (allPlayersLoaded)
             {
@@ -348,7 +350,7 @@ namespace FunBoardGames.App
         {
             CantStopGameController cantStopController = Context.Items["room"] as CantStopGameController;
 
-            bool allPlayersLoaded = cantStopController.SetGameLoaded(Context.ConnectionId);
+            bool allPlayersLoaded = cantStopController.SetPlayerLoaded(Context.ConnectionId);
 
             if (allPlayersLoaded)
             {

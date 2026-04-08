@@ -1,10 +1,11 @@
 ﻿
+using FunBoardGames.App.Core;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.CantStop;
 
-namespace FunBoardGames.App.GameRooms
+namespace FunBoardGames.App.CantStopGame
 {
-    public class CantStopGameController : GameController
+    public class CantStopGameController : GameControllerT<CantStopGamePlayer>
     {
         static Dictionary<int, int> columnData;
 
@@ -26,48 +27,15 @@ namespace FunBoardGames.App.GameRooms
             };
         }
 
-        List<CantStopGamePlayer> players = [];
-        int minPlayers = 2;
         SortedDictionary<int, int> whiteConePositions = new();
         int currentPlayerIndex = 0;
         public HashSet<int> FinishedColumns = new();
 
         int[] diceValues = new int[4];
 
-        public override int PlayerCount => players.Count();
-
-        public override bool AllPlayersReady
-        {
-            get
-            {
-                int readyCount = players.Where(player => player.IsReady).Count();
-
-                return readyCount == players.Count && players.Count >= minPlayers;
-            }
-        }
-
         public CantStopGameController(string roomName, int id) : base(roomName, id)
         {
             GroupKey = "Cant_Stop_" + RoomId;
-        }
-
-        public override bool AddPlayer(string connectionId, string playerName)
-        {
-            players.Add(new CantStopGamePlayer(playerName, connectionId));
-            return true;
-        }
-
-        public override IEnumerable<PlayerInfoDTO> GetPlayers()
-        {
-            return players.Select(player => new PlayerInfoDTO
-            {
-                UserProfile = new UserProfileDTO
-                {
-                    PlayerName = player.Name,
-                    ConnectionId = player.ConnectionId,
-                },
-                IsReady = player.IsReady,
-            });
         }
 
         public override RoomInfoDTO GetInfo()
@@ -85,26 +53,6 @@ namespace FunBoardGames.App.GameRooms
         public string GetCurrentPlayerConnectionId()
         {
             return players[currentPlayerIndex].ConnectionId;
-        }
-
-        public override bool RemovePlayer(string connectionId)
-        {
-            var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
-            return players.Remove(player);
-        }
-
-        public override void ChangeReady(string connectionId)
-        {
-            var p = players.FirstOrDefault(player => player.ConnectionId == connectionId);
-            p?.SetReady(true);
-        }
-
-        internal bool SetGameLoaded(string connectionId)
-        {
-            var player = players.FirstOrDefault(p => p.ConnectionId == connectionId);
-            player.SetLoaded();
-
-            return players.All(player => player.IsGameLoaded);
         }
 
         public CantStopBoardDTO GetBoardData()
