@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace FunBoardGames.App
 {
-    public class GameHub : Hub
+    public partial class GameHub : Hub
     {
         static List<string> connectedUsers = [];
 
