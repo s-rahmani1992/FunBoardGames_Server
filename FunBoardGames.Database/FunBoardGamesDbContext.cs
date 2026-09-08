@@ -21,7 +21,7 @@ namespace FunBoardGames.Database
                 entity.ToTable("UserCredentials");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Name).IsRequired();
-                entity.Property(e => e.Password).IsRequired();
+                entity.Property(e => e.AuthTokenHash).IsRequired();
                 entity.Property(e => e.DeviceId).IsRequired();
                 entity.Property(e => e.JoinedAt).IsRequired();
             });

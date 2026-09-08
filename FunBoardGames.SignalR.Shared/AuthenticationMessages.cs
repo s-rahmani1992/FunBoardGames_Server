@@ -3,24 +3,43 @@ namespace FunBoardGames.Network.SignalR.Shared
 {
     public static class AuthenticationMessageNames
     {
-        public const string Login = "Login";
+        public const string SignUp = "SignUp";
+        public const string SignIn = "SignIn";
     }
 
     public class UserProfileDTO
     {
+        public int UserId { get; set; }
         public string PlayerName { get; set; } = string.Empty;
         public string ConnectionId { get; set; } = string.Empty;
     }
 
-    public class LoginRequestMessage
+    public enum AuthenticationErrorCode
     {
-        public string PlayerName { get; set; } = string.Empty;
+        None = 0,
+        UserNotFound = 1,
+        InvalidCredentials = 2,
+        UserAlreadyExists = 3,
+        InvalidRequest = 4,
     }
 
-    public class LoginResponseMessage
+    public class SignUpRequestMessage
     {
-        public bool Success { get; set; }
-        public string ErrorMessage { get; set; } = string.Empty;
-        public UserProfileDTO Profile { get; set; }
+        public string PlayerName { get; set; } = string.Empty;
+        public string DeviceId { get; set; } = string.Empty;
+    }
+
+    public class SignInRequestMessage
+    {
+        public string PlayerName { get; set; } = string.Empty;
+        public string DeviceId { get; set; } = string.Empty;
+        public string AuthToken { get; set; } = string.Empty;
+    }
+
+    public class AuthenticationResponseMessage
+    {
+        public UserProfileDTO? ProfileDTO { get; set; }
+        public string AuthToken { get; set; } = string.Empty;
+        public AuthenticationErrorCode ErrorCode { get; set; } = AuthenticationErrorCode.None;
     }
 }

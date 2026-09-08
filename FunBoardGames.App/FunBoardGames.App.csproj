@@ -20,8 +20,4 @@
     <ProjectReference Include="..\FunBoardGames.SignalR.Shared\FunBoardGames.SignalR.Shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Authentication\" />
-  </ItemGroup>
-
 </Project>

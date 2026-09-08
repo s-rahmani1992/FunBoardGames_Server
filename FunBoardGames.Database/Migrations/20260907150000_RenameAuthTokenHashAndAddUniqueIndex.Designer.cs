@@ -3,6 +3,7 @@ using System;
 using FunBoardGames.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FunBoardGames.Database.Migrations
 {
     [DbContext(typeof(FunBoardGamesDbContext))]
-    partial class FunBoardGamesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260907150000_RenameAuthTokenHashAndAddUniqueIndex")]
+    partial class RenameAuthTokenHashAndAddUniqueIndex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,6 +32,10 @@ namespace FunBoardGames.Database.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AuthTokenHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -43,10 +50,6 @@ namespace FunBoardGames.Database.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("AuthTokenHash")
                         .IsRequired()
                         .HasColumnType("text");
 

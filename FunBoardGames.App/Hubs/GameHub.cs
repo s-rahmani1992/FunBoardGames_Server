@@ -1,4 +1,5 @@
-﻿using FunBoardGames.App.Core;
+﻿using FunBoardGames.App.Authentication;
+using FunBoardGames.App.Core;
 using FunBoardGames.App.CantStopGame;
 using FunBoardGames.App.Services;
 using FunBoardGames.App.SETGame;
@@ -37,20 +38,33 @@ namespace FunBoardGames.App
 
         #region Authentication
 
-        [HubMethodName(AuthenticationMessageNames.Login)]
-        public async Task LoginRequest(LoginRequestMessage loginMsg)
+        [HubMethodName(AuthenticationMessageNames.SignUp)]
+        public async Task SignUpRequest(SignUpRequestMessage signUpMsg)
         {
-            connectedUsers.Add(loginMsg.PlayerName);
-            await Clients.Caller.SendAsync(AuthenticationMessageNames.Login, new LoginResponseMessage
+            var authService = _provider.GetRequiredService<AuthenticationService>();
+            var response = await authService.SignUp(signUpMsg);
+            await CompleteAuthenticationRequest(AuthenticationMessageNames.SignIn, response);
+        }
+
+        [HubMethodName(AuthenticationMessageNames.SignIn)]
+        public async Task SignInRequest(SignInRequestMessage signInMsg)
+        {
+            var authService = _provider.GetRequiredService<AuthenticationService>();
+            var response = await authService.SignIn(signInMsg);
+            await CompleteAuthenticationRequest(AuthenticationMessageNames.SignIn, response);
+        }
+
+        async Task CompleteAuthenticationRequest(string messageName, AuthenticationResponseMessage response)
+        {
+            if (response.ErrorCode == AuthenticationErrorCode.None && response.ProfileDTO != null)
             {
-                Success = true,
-                Profile = new()
-                {
-                    PlayerName = loginMsg.PlayerName,
-                    ConnectionId = Context.ConnectionId,
-                },
-            });
-            Context.Items["name"] = loginMsg.PlayerName;
+                response.ProfileDTO.ConnectionId = Context.ConnectionId;
+                connectedUsers.Add(response.ProfileDTO.PlayerName);
+                Context.Items["name"] = response.ProfileDTO.PlayerName;
+                Context.Items["userId"] = response.ProfileDTO.UserId;
+            }
+
+            await Clients.Caller.SendAsync(messageName, response);
         }
 
         #endregion
