@@ -71,36 +71,13 @@ namespace FunBoardGames.App
 
         #region Lobby and MatchMaking
 
-        [HubMethodName(LobbyMessageNames.CreateRoom)]
-        public async Task CreateRoom(CreateRoomRequestMessage createRoomMsg)
+        [HubMethodName(LobbyMessageNames.JoinGame)]
+        public async Task JoinGame(JoinGameRequestMessage joinGameMsg)
         {
             var lobbyService = _provider.GetRequiredService<LobbyService>();
+            GameController gameController = lobbyService.JoinGame(joinGameMsg.Game, Context.ConnectionId, Context.Items["name"] as string);
 
-            var gameController = lobbyService.CreateGame(createRoomMsg.Game, createRoomMsg.RoomName);
-            
-            gameController.AddPlayer(Context.ConnectionId, Context.Items["name"] as string);
             Context.Items["room"] = gameController;
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameController.GroupKey);
-            await Clients.Caller.SendAsync(LobbyMessageNames.JoinRoom, new JoinRoomResponseMessage
-            {
-                Game = createRoomMsg.Game,
-                RoomName = createRoomMsg.RoomName,
-                RoomId = gameController.RoomId,
-                JoinedPlayers = [.. gameController.GetPlayers()],
-            });
-        }
-
-        [HubMethodName(LobbyMessageNames.JoinRoom)]
-        public async Task JoinRoom(JoinRoomRequestMessage joinRoomMsg)
-        {
-            var lobbyService = _provider.GetRequiredService<LobbyService>();
-            GameController? gameController = lobbyService.GetGame(joinRoomMsg.Game, joinRoomMsg.RoomId);
-
-            if (gameController == null)
-                return;
-
-            gameController.AddPlayer(Context.ConnectionId, Context.Items["name"] as string);
-            Context.Items["room"] = gameController; 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameController.GroupKey);
 
             await Clients.OthersInGroup(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerJoinRoom, new PlayerJoinRoomResponseMessage()
@@ -118,28 +95,24 @@ namespace FunBoardGames.App
 
             await Clients.Caller.SendAsync(LobbyMessageNames.JoinRoom, new JoinRoomResponseMessage
             {
-                Game = joinRoomMsg.Game,
+                Game = joinGameMsg.Game,
                 RoomName = gameController.RoomName,
                 RoomId = gameController.RoomId,
                 JoinedPlayers = [.. gameController.GetPlayers()],
             });
+
+            await Task.Delay(1000); // TODO: Delay to ensure the player has time to receive the JoinRoom message before sending AllPlayersReady, fix it later
+
+            if (gameController.IsOpen == false)
+            {
+                await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.AllPlayersReady);
+            }
         }
 
         [HubMethodName(LobbyMessageNames.PlayerLeave)]
         public async Task LeaveRoom()
         {
             await LeaveRoomInternal();
-        }
-
-        [HubMethodName(LobbyMessageNames.GetRoomList)]
-        public async Task GetRoomList(GetRoomListRequestMessage getRoomMsg)
-        {
-            var lobbyService = _provider.GetRequiredService<LobbyService>();
-
-            await Clients.Caller.SendAsync(LobbyMessageNames.GetRoomList, new GetRoomListResponseMessage()
-            {
-                Rooms = lobbyService.GetGames(getRoomMsg.Game).Select(game => game.GetInfo()).ToList(),
-            });
         }
 
         [HubMethodName(LobbyMessageNames.PlayerReady)]
@@ -151,52 +124,12 @@ namespace FunBoardGames.App
             {
                 ConnectionId = Context.ConnectionId,
             });
-
-            if (gameController.AllPlayersReady)
-            {
-                await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.AllPlayersReady);
-            }
         }
 
         [HubMethodName(LobbyMessageNames.JoinStraightGame)]
         public async Task JoinStraightGame(JoinStraightGameRequestMessage joinStraightGameMsg)
         {
-            var lobbyService = _provider.GetRequiredService<LobbyService>();
-            GameController? gameController = lobbyService.GetGame(joinStraightGameMsg.Game, -1);
-
-            gameController ??= lobbyService.CreateGame(joinStraightGameMsg.Game, "Quick Game _ " + joinStraightGameMsg.Game, true);
-
-            gameController.AddPlayer(Context.ConnectionId, Context.Items["name"] as string);
-            Context.Items["room"] = gameController;
-            gameController.SetPlayerReady(Context.ConnectionId);
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameController.GroupKey);
-
-            await Clients.OthersInGroup(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerJoinRoom, new PlayerJoinRoomResponseMessage()
-            {
-                NewPlayer = new PlayerInfoDTO()
-                {
-                    UserProfile = new UserProfileDTO
-                    {
-                        ConnectionId = Context.ConnectionId,
-                        PlayerName = Context.Items["name"] as string,
-                    },
-                    IsReady = true,
-                },
-            });
-
-            await Clients.Caller.SendAsync(LobbyMessageNames.JoinRoom, new JoinRoomResponseMessage
-            {
-                Game = joinStraightGameMsg.Game,
-                RoomName = gameController.RoomName,
-                RoomId = gameController.RoomId,
-                JoinedPlayers = [.. gameController.GetPlayers()],
-            });
-
-            if(gameController.PlayerCount == 2 && gameController.AllPlayersReady)
-            {
-                await Task.Delay(1000);
-                await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.AllPlayersReady);
-            }
+            await JoinGame(new JoinGameRequestMessage { Game = joinStraightGameMsg.Game });
         }
 
         async Task LeaveRoomInternal()

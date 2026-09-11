@@ -7,20 +7,11 @@ namespace FunBoardGames.App.Core
     {
         protected List<T> players = [];
 
-        protected GameControllerT(string roomName, int id) : base(roomName, id)
+        protected GameControllerT(string roomName, uint id) : base(roomName, id)
         {
         }
 
         public override int PlayerCount => players.Count;
-
-        public override bool AllPlayersReady
-        {
-            get
-            {
-                int readyCount = players.Where(player => player.IsReady).Count();
-                return readyCount == players.Count && players.Count >= MinPlayers;
-            }
-        }
 
         public override bool AddPlayer(string connectionId, string playerName)
         {

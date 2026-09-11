@@ -59,10 +59,12 @@ namespace FunBoardGames.App.SETGame
             }
         }
 
-        public SETGameController(string roomName, int id) : base(roomName, id)
+        public SETGameController(string roomName, uint id) : base(roomName, id)
         {
             GroupKey = "SET_" + RoomId;
         }
+
+        public override int RequiredPlayerCount => 2;
 
         public override RoomInfoDTO GetInfo()
         {
@@ -70,7 +72,7 @@ namespace FunBoardGames.App.SETGame
             {
                 GameType = BoardGameType.SET,
                 Id = RoomId,
-                MaxPlayers = 4,
+                MaxPlayers = RequiredPlayerCount,
                 PlayerCount = players.Count(),
                 Name = RoomName,
             };

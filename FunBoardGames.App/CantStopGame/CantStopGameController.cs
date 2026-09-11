@@ -33,10 +33,12 @@ namespace FunBoardGames.App.CantStopGame
 
         int[] diceValues = new int[4];
 
-        public CantStopGameController(string roomName, int id) : base(roomName, id)
+        public CantStopGameController(string roomName, uint id) : base(roomName, id)
         {
             GroupKey = "Cant_Stop_" + RoomId;
         }
+
+        public override int RequiredPlayerCount => 2;
 
         public override RoomInfoDTO GetInfo()
         {
@@ -44,7 +46,7 @@ namespace FunBoardGames.App.CantStopGame
             {
                 GameType = BoardGameType.CantStop,
                 Id = RoomId,
-                MaxPlayers = 4,
+                MaxPlayers = RequiredPlayerCount,
                 PlayerCount = PlayerCount,
                 Name = RoomName,
             };
