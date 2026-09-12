@@ -1,11 +1,12 @@
 ﻿using FunBoardGames.App.Authentication;
-using FunBoardGames.App.Core;
 using FunBoardGames.App.CantStopGame;
+using FunBoardGames.App.Core;
 using FunBoardGames.App.Services;
 using FunBoardGames.App.SETGame;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.CantStop;
 using FunBoardGames.Network.SignalR.Shared.SET;
+using FunBoardGames.SignalR.Shared;
 using Microsoft.AspNetCore.SignalR;
 
 namespace FunBoardGames.App
@@ -71,11 +72,24 @@ namespace FunBoardGames.App
 
         #region Lobby and MatchMaking
 
+        [HubMethodName(UserMessageNames.GetUserData)]
+        public async Task GetUserData()
+        {
+            var lobbyService = _provider.GetRequiredService<LobbyService>();
+            var games = await lobbyService.GetGames();
+
+            await Clients.Caller.SendAsync(UserMessageNames.GetUserData, new GetUserDataResponseMessage
+            {
+                Games = games,
+            });
+            int h = 0;
+        }
+
         [HubMethodName(LobbyMessageNames.JoinGame)]
         public async Task JoinGame(JoinGameRequestMessage joinGameMsg)
         {
             var lobbyService = _provider.GetRequiredService<LobbyService>();
-            GameController gameController = lobbyService.JoinGame(joinGameMsg.Game, Context.ConnectionId, Context.Items["name"] as string);
+            GameController gameController = await lobbyService.JoinGame(joinGameMsg.GameId, Context.ConnectionId, Context.Items["name"] as string);
 
             Context.Items["room"] = gameController;
             await Groups.AddToGroupAsync(Context.ConnectionId, gameController.GroupKey);
@@ -95,7 +109,7 @@ namespace FunBoardGames.App
 
             await Clients.Caller.SendAsync(LobbyMessageNames.JoinRoom, new JoinRoomResponseMessage
             {
-                Game = joinGameMsg.Game,
+                Game = gameController.GetInfo().GameType,
                 RoomName = gameController.RoomName,
                 RoomId = gameController.RoomId,
                 JoinedPlayers = [.. gameController.GetPlayers()],
@@ -129,7 +143,13 @@ namespace FunBoardGames.App
         [HubMethodName(LobbyMessageNames.JoinStraightGame)]
         public async Task JoinStraightGame(JoinStraightGameRequestMessage joinStraightGameMsg)
         {
-            await JoinGame(new JoinGameRequestMessage { Game = joinStraightGameMsg.Game });
+            var lobbyService = _provider.GetRequiredService<LobbyService>();
+            uint? gameId = await lobbyService.FindGameId(joinStraightGameMsg.Game);
+
+            if (gameId == null)
+                return;
+
+            await JoinGame(new JoinGameRequestMessage { GameId = gameId.Value });
         }
 
         async Task LeaveRoomInternal()

@@ -5,14 +5,14 @@ namespace FunBoardGames.App.Core
 {
     public abstract class GameController
     {
-        public GameController(string roomName, uint id)
+        public GameController(uint id)
         {
-            RoomName = roomName;
             RoomId = id;
         }
 
         public abstract int PlayerCount { get; }
         public abstract int RequiredPlayerCount { get; }
+        public abstract uint GameId {  get; }
 
         public abstract bool AddPlayer(string connectionId, string playerName);
         public abstract bool RemovePlayer(string connectionId);

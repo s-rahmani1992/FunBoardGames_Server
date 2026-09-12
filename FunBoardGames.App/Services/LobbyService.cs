@@ -1,44 +1,95 @@
-using FunBoardGames.App.Core;
 using FunBoardGames.App.CantStopGame;
+using FunBoardGames.App.Core;
 using FunBoardGames.App.SETGame;
+using FunBoardGames.Database;
+using FunBoardGames.Database.Entities;
 using FunBoardGames.Network.SignalR.Shared;
+using FunBoardGames.SignalR.Shared;
+using Microsoft.EntityFrameworkCore;
 
 namespace FunBoardGames.App.Services
 {
     public class LobbyService
     {
-        readonly GameMatchMaker<SETGameController> setMatchMaker = new("SET");
-        readonly GameMatchMaker<CantStopGameController> cantStopMatchMaker = new("CantStop");
-
-        /// <summary>
-        /// Finds an open room of the given game type for the player to join,
-        /// creating a new one if none is currently open, and adds the player to it.
-        /// </summary>
-        /// <returns>The game controller the player was added to.</returns>
-        public GameController JoinGame(BoardGameType gameType, string connectionId, string playerName)
+        public LobbyService(FunBoardGamesDbContext dbContext, MatchMakerRegistry matchMakerRegistry)
         {
-            switch (gameType)
+            _dbContext = dbContext;
+            _matchMakerRegistry = matchMakerRegistry;
+        }
+
+        private readonly FunBoardGamesDbContext _dbContext;
+        private readonly MatchMakerRegistry _matchMakerRegistry;
+
+        public async Task<GameController> JoinGame(uint gameId, string connectionId, string playerName)
+        {
+            if (_matchMakerRegistry.TryGetValue(gameId, out var matchMaker))
             {
-                case BoardGameType.SET:
-                    return setMatchMaker.JoinGame(connectionId, playerName);
-                case BoardGameType.CantStop:
-                    return cantStopMatchMaker.JoinGame(connectionId, playerName);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(gameType), $"Unsupported game type: {gameType}");
+                return matchMaker.JoinGame(connectionId, playerName);
             }
+
+            var gameEntity = await _dbContext.Games.FirstOrDefaultAsync(entity => entity.Id == gameId);
+
+            GameMatchMaker newMatchMaker = gameEntity switch
+            {
+                SETGameEntity setGame => new GameMatchMakerT<SETGameController>(roomId => new SETGameController(roomId, setGame)),
+                CantStopGameEntity cantStopGame => new GameMatchMakerT<CantStopGameController>(roomId => new CantStopGameController(roomId, cantStopGame)),
+                _ => null,
+            };
+
+            if (newMatchMaker == null)
+                return null;
+
+            newMatchMaker = _matchMakerRegistry.GetOrAdd(gameId, newMatchMaker);
+            return newMatchMaker.JoinGame(connectionId, playerName);
         }
 
         public void RemoveGame(GameController gameController)
         {
-            switch (gameController)
+            if (_matchMakerRegistry.TryGetValue(gameController.GameId, out var matchMaker))
             {
-                case SETGameController setGame:
-                    setMatchMaker.RemoveGame(setGame.RoomId);
-                    break;
-                case CantStopGameController cantStopGame:
-                    cantStopMatchMaker.RemoveGame(cantStopGame.RoomId);
-                    break;
+                matchMaker.RemoveGame(gameController);
             }
         }
+
+        public async Task<uint?> FindGameId(BoardGameType gameType)
+        {
+            var entityGameType = ToEntityGameType(gameType);
+            var gameEntity = await _dbContext.Games.FirstOrDefaultAsync(entity => entity.GameType == entityGameType);
+            return gameEntity?.Id;
+        }
+
+        static GameType ToEntityGameType(BoardGameType gameType) => gameType switch
+        {
+            BoardGameType.SET => GameType.SET,
+            BoardGameType.CantStop => GameType.CantStop,
+            _ => throw new ArgumentOutOfRangeException(nameof(gameType)),
+        };
+
+        public async Task<List<GameDTO>> GetGames()
+        {
+            var gameEntities = await _dbContext.Games.ToListAsync();
+            return gameEntities.Select(ToGameDTO).ToList();
+        }
+
+        static GameDTO ToGameDTO(BoardGameEntity entity) => entity switch
+        {
+            SETGameEntity setGame => new SETGameDTO
+            {
+                Id = setGame.Id,
+                Name = setGame.Name,
+                GameType = BoardGameType.SET,
+                PlayerCount = setGame.PlayerCount,
+                GuessTime = setGame.GuessTime,
+            },
+            CantStopGameEntity cantStopGame => new CantStopGameDTO
+            {
+                Id = cantStopGame.Id,
+                Name = cantStopGame.Name,
+                GameType = BoardGameType.CantStop,
+                PlayerCount = cantStopGame.PlayerCount,
+                BoardData = cantStopGame.BoardData,
+            },
+            _ => throw new NotSupportedException($"Unsupported game entity type: {entity.GetType()}"),
+        };
     }
 }

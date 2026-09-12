@@ -11,7 +11,8 @@ var connectionString = builder.Configuration.GetConnectionString("FunBoardGamesD
     ?? throw new InvalidOperationException("Connection string 'FunBoardGamesDatabase' not found.");
 builder.Services.AddFunBoardGamesDatabase(connectionString);
 
-builder.Services.AddSingleton<LobbyService>();
+builder.Services.AddSingleton<MatchMakerRegistry>();
+builder.Services.AddScoped<LobbyService>();
 builder.Services.AddScoped<AuthenticationService>();
 
 var app = builder.Build();

@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace FunBoardGames.Network.SignalR.Shared
 {
@@ -96,6 +97,6 @@ namespace FunBoardGames.Network.SignalR.Shared
 
     public class JoinGameRequestMessage
     {
-        public BoardGameType Game { get; set; }
+        public uint GameId { get; set; }
     }
 }

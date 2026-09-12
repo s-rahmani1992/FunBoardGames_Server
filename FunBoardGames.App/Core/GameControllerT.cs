@@ -1,15 +1,22 @@
-﻿
+
+using FunBoardGames.Database.Entities;
 using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.Core
 {
-    public abstract class GameControllerT<T> : GameController where T : BoardGamePlayer
+    public abstract class GameControllerT<TPlayer, TGame> : GameController where TPlayer : BoardGamePlayer where TGame : BoardGameEntity
     {
-        protected List<T> players = [];
+        protected readonly List<TPlayer> players = [];
+        protected readonly TGame game;
+        readonly Func<string, string, TPlayer> createPlayer;
 
-        protected GameControllerT(string roomName, uint id) : base(roomName, id)
+        protected GameControllerT(uint id, TGame game, Func<string, string, TPlayer> createPlayer) : base(id)
         {
+            this.game = game;
+            this.createPlayer = createPlayer;
         }
+
+        public override uint GameId => game.Id;
 
         public override int PlayerCount => players.Count;
 
@@ -18,7 +25,7 @@ namespace FunBoardGames.App.Core
             if(players.Exists(p => p.ConnectionId == connectionId))
                 return false;
 
-            players.Add((T)Activator.CreateInstance(typeof(T), playerName, connectionId));
+            players.Add(createPlayer(playerName, connectionId));
             return true;
         }
 

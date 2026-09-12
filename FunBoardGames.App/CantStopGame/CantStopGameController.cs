@@ -1,39 +1,20 @@
 ﻿
 using FunBoardGames.App.Core;
+using FunBoardGames.Database.Entities;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.CantStop;
 
 namespace FunBoardGames.App.CantStopGame
 {
-    public class CantStopGameController : GameControllerT<CantStopGamePlayer>
+    public class CantStopGameController : GameControllerT<CantStopGamePlayer, CantStopGameEntity>
     {
-        static Dictionary<int, int> columnData;
-
-        static CantStopGameController()
-        {
-            columnData = new Dictionary<int, int>()
-            {
-                {12, 3},
-                {11, 5},
-                {10, 6},
-                {9, 7},
-                {8, 8},
-                {7, 8},
-                {6, 6},
-                {5, 5},
-                {4, 5},
-                {3, 4},
-                {2, 4},
-            };
-        }
-
         SortedDictionary<int, int> whiteConePositions = new();
         int currentPlayerIndex = 0;
         public HashSet<int> FinishedColumns = new();
 
         int[] diceValues = new int[4];
 
-        public CantStopGameController(string roomName, uint id) : base(roomName, id)
+        public CantStopGameController(uint id, CantStopGameEntity entity) : base(id, entity, (name, connectionId) => new CantStopGamePlayer(name, connectionId))
         {
             GroupKey = "Cant_Stop_" + RoomId;
         }
@@ -61,7 +42,7 @@ namespace FunBoardGames.App.CantStopGame
         {
             return new CantStopBoardDTO()
             {
-                Columns = columnData,
+                Columns = game.BoardData,
             };
         }
 
@@ -86,7 +67,7 @@ namespace FunBoardGames.App.CantStopGame
             {
                 var move = GetPosibleMove(sumDice1, players[currentPlayerIndex]);
 
-                if (move == null || move.Value.pos >= columnData[sumDice1] - 1)
+                if (move == null || move.Value.pos >= game.BoardData[sumDice1] - 1)
                     return result;
 
                 whiteConePositions[sumDice1] = move.Value.pos + 1;
@@ -154,7 +135,7 @@ namespace FunBoardGames.App.CantStopGame
             if (whiteConePos == -1)
                 return (0, 1);
 
-            if (whiteConePos >= columnData[columnNumber] - 1) // the cone is at 1 cell to the top
+            if (whiteConePos >= game.BoardData[columnNumber] - 1) // the cone is at 1 cell to the top
                 return null;
 
             return (whiteConePos + 1, newCone);
@@ -169,7 +150,7 @@ namespace FunBoardGames.App.CantStopGame
                 int newPos = whiteCone.Value;
 
                 player.ConePositions[columnNumber] = newPos;
-                if (newPos >= columnData[columnNumber] - 1)
+                if (newPos >= game.BoardData[columnNumber] - 1)
                 {
                     player.AddScore(1);
                     FinishedColumns.Add(columnNumber);

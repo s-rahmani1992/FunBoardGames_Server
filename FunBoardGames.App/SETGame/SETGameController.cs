@@ -1,11 +1,12 @@
 ﻿using FunBoardGames.App.Core;
+using FunBoardGames.Database.Entities;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.SET;
 using Microsoft.AspNetCore.SignalR;
 
 namespace FunBoardGames.App.SETGame
 {
-    public class SETGameController : GameControllerT<SETGamePlayer>
+    public class SETGameController : GameControllerT<SETGamePlayer, SETGameEntity>
     {
         private static List<SETCardDTO> SETCardData;
 
@@ -16,7 +17,7 @@ namespace FunBoardGames.App.SETGame
 
         CancellationTokenSource guessCancelTokenSource;
 
-        const int guessTime = 7000;
+        //const int guessTime = 7000;
 
         public bool HasEnoughCards => cardCursor >= SETCardData.Count() - 1 || placedCards.Count >= 12;
 
@@ -59,7 +60,7 @@ namespace FunBoardGames.App.SETGame
             }
         }
 
-        public SETGameController(string roomName, uint id) : base(roomName, id)
+        public SETGameController(uint id, SETGameEntity entity) : base(id, entity, (name, connectionId) => new SETGamePlayer(name, connectionId))
         {
             GroupKey = "SET_" + RoomId;
         }
@@ -119,7 +120,7 @@ namespace FunBoardGames.App.SETGame
             {
                 try
                 {
-                    await Task.Delay(guessTime, guessCancelTokenSource.Token);
+                    await Task.Delay((int)(game.GuessTime * 1000), guessCancelTokenSource.Token);
                     player.AddWrongScore();
                     await clientGroup.SendAsync(SETGameMessageNames.PlayerGuess, new GuessResultResponse
                     {
