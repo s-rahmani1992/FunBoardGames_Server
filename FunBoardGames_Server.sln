@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunBoardGames.SignalR.Share
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunBoardGames.Database", "FunBoardGames.Database\FunBoardGames.Database.csproj", "{375FF796-CF8E-4898-A2C7-2343FFCBE239}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunBoardGames.App.Tests", "FunBoardGames.App.Tests\FunBoardGames.App.Tests.csproj", "{AF20B837-84C4-48D0-B78C-37D65B2E117E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{375FF796-CF8E-4898-A2C7-2343FFCBE239}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{375FF796-CF8E-4898-A2C7-2343FFCBE239}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{375FF796-CF8E-4898-A2C7-2343FFCBE239}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF20B837-84C4-48D0-B78C-37D65B2E117E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF20B837-84C4-48D0-B78C-37D65B2E117E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF20B837-84C4-48D0-B78C-37D65B2E117E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF20B837-84C4-48D0-B78C-37D65B2E117E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
