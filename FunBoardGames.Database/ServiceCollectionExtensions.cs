@@ -11,8 +11,11 @@ namespace FunBoardGames.Database
         /// </summary>
         public static IServiceCollection AddFunBoardGamesDatabase(this IServiceCollection services, string connectionString)
         {
-            services.AddDbContext<FunBoardGamesDbContext>(options =>
+            services.AddDbContextFactory<FunBoardGamesDbContext>(options =>
                 options.UseNpgsql(connectionString));
+
+            services.AddScoped(sp =>
+                sp.GetRequiredService<IDbContextFactory<FunBoardGamesDbContext>>().CreateDbContext());
 
             return services;
         }

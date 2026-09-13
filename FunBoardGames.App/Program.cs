@@ -1,6 +1,6 @@
 using FunBoardGames.App;
 using FunBoardGames.App.Authentication;
-using FunBoardGames.App.Services;
+using FunBoardGames.App.Lobby;
 using FunBoardGames.Database;
 using Microsoft.Azure.SignalR;
 
@@ -11,9 +11,8 @@ var connectionString = builder.Configuration.GetConnectionString("FunBoardGamesD
     ?? throw new InvalidOperationException("Connection string 'FunBoardGamesDatabase' not found.");
 builder.Services.AddFunBoardGamesDatabase(connectionString);
 
-builder.Services.AddSingleton<MatchMakerRegistry>();
-builder.Services.AddScoped<LobbyService>();
-builder.Services.AddScoped<AuthenticationService>();
+builder.Services.AddSingleton<AuthenticationService>();
+builder.Services.AddSingleton<MatchMakingService>();
 
 var app = builder.Build();
 app.MapGet("/", () => "App is running");

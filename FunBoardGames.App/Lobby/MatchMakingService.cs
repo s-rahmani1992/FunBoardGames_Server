@@ -6,28 +6,29 @@ using FunBoardGames.Database.Entities;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.SignalR.Shared;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 
-namespace FunBoardGames.App.Services
+namespace FunBoardGames.App.Lobby
 {
-    public class LobbyService
+    public class MatchMakingService
     {
-        public LobbyService(FunBoardGamesDbContext dbContext, MatchMakerRegistry matchMakerRegistry)
+        public MatchMakingService(IDbContextFactory<FunBoardGamesDbContext> dbContextFactory)
         {
-            _dbContext = dbContext;
-            _matchMakerRegistry = matchMakerRegistry;
+            _dbContextFactory = dbContextFactory;
         }
 
-        private readonly FunBoardGamesDbContext _dbContext;
-        private readonly MatchMakerRegistry _matchMakerRegistry;
+        readonly IDbContextFactory<FunBoardGamesDbContext> _dbContextFactory;
+        readonly ConcurrentDictionary<uint, GameMatchMaker> _activeMatchMakers = new();
 
         public async Task<GameController> JoinGame(uint gameId, string connectionId, string playerName)
         {
-            if (_matchMakerRegistry.TryGetValue(gameId, out var matchMaker))
+            if (_activeMatchMakers.TryGetValue(gameId, out var matchMaker))
             {
                 return matchMaker.JoinGame(connectionId, playerName);
             }
 
-            var gameEntity = await _dbContext.Games.FirstOrDefaultAsync(entity => entity.Id == gameId);
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var gameEntity = await dbContext.Games.FirstOrDefaultAsync(entity => entity.Id == gameId);
 
             GameMatchMaker newMatchMaker = gameEntity switch
             {
@@ -39,13 +40,13 @@ namespace FunBoardGames.App.Services
             if (newMatchMaker == null)
                 return null;
 
-            newMatchMaker = _matchMakerRegistry.GetOrAdd(gameId, newMatchMaker);
+            newMatchMaker = _activeMatchMakers.GetOrAdd(gameId, newMatchMaker);
             return newMatchMaker.JoinGame(connectionId, playerName);
         }
 
         public void RemoveGame(GameController gameController)
         {
-            if (_matchMakerRegistry.TryGetValue(gameController.GameId, out var matchMaker))
+            if (_activeMatchMakers.TryGetValue(gameController.GameId, out var matchMaker))
             {
                 matchMaker.RemoveGame(gameController);
             }
@@ -54,7 +55,8 @@ namespace FunBoardGames.App.Services
         public async Task<uint?> FindGameId(BoardGameType gameType)
         {
             var entityGameType = ToEntityGameType(gameType);
-            var gameEntity = await _dbContext.Games.FirstOrDefaultAsync(entity => entity.GameType == entityGameType);
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var gameEntity = await dbContext.Games.FirstOrDefaultAsync(entity => entity.GameType == entityGameType);
             return gameEntity?.Id;
         }
 
@@ -67,7 +69,8 @@ namespace FunBoardGames.App.Services
 
         public async Task<List<GameDTO>> GetGames()
         {
-            var gameEntities = await _dbContext.Games.ToListAsync();
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var gameEntities = await dbContext.Games.ToListAsync();
             return gameEntities.Select(ToGameDTO).ToList();
         }
 

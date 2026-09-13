@@ -1,6 +1,7 @@
+using FunBoardGames.App.Core;
 using System.Collections.Concurrent;
 
-namespace FunBoardGames.App.Core
+namespace FunBoardGames.App.Lobby
 {
     public class GameMatchMakerT<T> : GameMatchMaker where T : GameController
     {
@@ -15,11 +16,7 @@ namespace FunBoardGames.App.Core
             this.createGame = createGame;
         }
 
-        /// <summary>
-        /// Finds an open game room for the player to join, creating a new one when
-        /// none is available, adds the player to it and returns that room.
-        /// </summary>
-        public T Join(string connectionId, string playerName)
+        protected T Join(string connectionId, string playerName)
         {
             lock (matchLock)
             {
@@ -29,8 +26,7 @@ namespace FunBoardGames.App.Core
             }
         }
 
-        /// <summary>Stops tracking the room with the given id (e.g. once it's empty or finished).</summary>
-        public void RemoveGame(uint roomId)
+        protected void RemoveGame(uint roomId)
         {
             games.TryRemove(roomId, out _);
         }

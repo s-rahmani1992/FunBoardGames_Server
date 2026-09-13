@@ -9,12 +9,12 @@ namespace FunBoardGames.App.Authentication
 {
     public class AuthenticationService
     {
-        private readonly FunBoardGamesDbContext _dbContext;
-
-        public AuthenticationService(FunBoardGamesDbContext dbContext)
+        public AuthenticationService(IDbContextFactory<FunBoardGamesDbContext> dbContextFactory)
         {
-            _dbContext = dbContext;
+            _dbContextFactory = dbContextFactory;
         }
+
+        readonly IDbContextFactory<FunBoardGamesDbContext> _dbContextFactory;
 
         public async Task<AuthenticationResponseMessage> SignUp(SignUpRequestMessage request)
         {
@@ -33,6 +33,8 @@ namespace FunBoardGames.App.Authentication
                 JoinedAt = DateTimeOffset.UtcNow,
                 LastLoginAt = DateTimeOffset.UtcNow,
             };
+
+            using var _dbContext = await _dbContextFactory.CreateDbContextAsync();
 
             _dbContext.UserCredentials.Add(userCredentials);
 
@@ -66,6 +68,8 @@ namespace FunBoardGames.App.Authentication
             {
                 return CreateErrorResponse(AuthenticationErrorCode.InvalidRequest);
             }
+
+            using var _dbContext = await _dbContextFactory.CreateDbContextAsync();
 
             var userCredentials = await _dbContext.UserCredentials.FirstOrDefaultAsync(u =>
                 u.Name == request.PlayerName &&

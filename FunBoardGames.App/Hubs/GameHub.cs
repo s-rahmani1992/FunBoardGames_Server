@@ -1,7 +1,7 @@
 ﻿using FunBoardGames.App.Authentication;
 using FunBoardGames.App.CantStopGame;
 using FunBoardGames.App.Core;
-using FunBoardGames.App.Services;
+using FunBoardGames.App.Lobby;
 using FunBoardGames.App.SETGame;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.CantStop;
@@ -75,7 +75,7 @@ namespace FunBoardGames.App
         [HubMethodName(UserMessageNames.GetUserData)]
         public async Task GetUserData()
         {
-            var lobbyService = _provider.GetRequiredService<LobbyService>();
+            var lobbyService = _provider.GetRequiredService<MatchMakingService>();
             var games = await lobbyService.GetGames();
 
             await Clients.Caller.SendAsync(UserMessageNames.GetUserData, new GetUserDataResponseMessage
@@ -88,7 +88,7 @@ namespace FunBoardGames.App
         [HubMethodName(LobbyMessageNames.JoinGame)]
         public async Task JoinGame(JoinGameRequestMessage joinGameMsg)
         {
-            var lobbyService = _provider.GetRequiredService<LobbyService>();
+            var lobbyService = _provider.GetRequiredService<MatchMakingService>();
             GameController gameController = await lobbyService.JoinGame(joinGameMsg.GameId, Context.ConnectionId, Context.Items["name"] as string);
 
             Context.Items["room"] = gameController;
@@ -143,7 +143,7 @@ namespace FunBoardGames.App
         [HubMethodName(LobbyMessageNames.JoinStraightGame)]
         public async Task JoinStraightGame(JoinStraightGameRequestMessage joinStraightGameMsg)
         {
-            var lobbyService = _provider.GetRequiredService<LobbyService>();
+            var lobbyService = _provider.GetRequiredService<MatchMakingService>();
             uint? gameId = await lobbyService.FindGameId(joinStraightGameMsg.Game);
 
             if (gameId == null)
@@ -172,7 +172,7 @@ namespace FunBoardGames.App
 
                 if(gameController.PlayerCount == 0)
                 {
-                    var lobbyService = _provider.GetRequiredService<LobbyService>();
+                    var lobbyService = _provider.GetRequiredService<MatchMakingService>();
                     lobbyService.RemoveGame(gameController);
                 }
             }
@@ -249,7 +249,7 @@ namespace FunBoardGames.App
                         FinalScores = setController.GetFinalResults(),
                     });
 
-                    var lobbyService = _provider.GetRequiredService<LobbyService>();
+                    var lobbyService = _provider.GetRequiredService<MatchMakingService>();
                     lobbyService.RemoveGame(setController);
                 }
             }
@@ -383,7 +383,7 @@ namespace FunBoardGames.App
                 {
                     PlayerScores = cantStopController.GetPlayerScores(),
                 });
-                var lobbyService = _provider.GetRequiredService<LobbyService>();
+                var lobbyService = _provider.GetRequiredService<MatchMakingService>();
                 lobbyService.RemoveGame(cantStopController);
             }
         }

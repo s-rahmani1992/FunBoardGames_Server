@@ -1,4 +1,6 @@
-﻿namespace FunBoardGames.App.Core
+﻿using FunBoardGames.App.Core;
+
+namespace FunBoardGames.App.Lobby
 {
     public abstract class GameMatchMaker
     {
