@@ -28,12 +28,12 @@ namespace FunBoardGames.App.Lobby
             }
 
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
-            var gameEntity = await dbContext.Games.FirstOrDefaultAsync(entity => entity.Id == gameId);
+            var gameEntity = await dbContext.GetGameById(gameId);
 
             GameMatchMaker newMatchMaker = gameEntity switch
             {
-                SETGameEntity setGame => new GameMatchMakerT<SETGameController>(roomId => new SETGameController(roomId, setGame)),
-                CantStopGameEntity cantStopGame => new GameMatchMakerT<CantStopGameController>(roomId => new CantStopGameController(roomId, cantStopGame)),
+                SETGameData setGame => new GameMatchMakerT<SETGameController>(roomId => new SETGameController(roomId, setGame)),
+                CantStopGameData cantStopGame => new GameMatchMakerT<CantStopGameController>(roomId => new CantStopGameController(roomId, cantStopGame)),
                 _ => null,
             };
 
@@ -56,7 +56,7 @@ namespace FunBoardGames.App.Lobby
         {
             var entityGameType = ToEntityGameType(gameType);
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
-            var gameEntity = await dbContext.Games.FirstOrDefaultAsync(entity => entity.GameType == entityGameType);
+            var gameEntity = await dbContext.GetGameByType(entityGameType);
             return gameEntity?.Id;
         }
 
@@ -70,21 +70,21 @@ namespace FunBoardGames.App.Lobby
         public async Task<List<GameDTO>> GetGames()
         {
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
-            var gameEntities = await dbContext.Games.ToListAsync();
+            var gameEntities = await dbContext.GetAllGames();
             return gameEntities.Select(ToGameDTO).ToList();
         }
 
-        static GameDTO ToGameDTO(BoardGameEntity entity) => entity switch
+        static GameDTO ToGameDTO(BoardGameData entity) => entity switch
         {
-            SETGameEntity setGame => new SETGameDTO
+            SETGameData setGame => new SETGameDTO
             {
                 Id = setGame.Id,
                 Name = setGame.Name,
                 GameType = BoardGameType.SET,
                 PlayerCount = setGame.PlayerCount,
-                GuessTime = setGame.GuessTime,
+                GuessTime = setGame.PlayerCount,
             },
-            CantStopGameEntity cantStopGame => new CantStopGameDTO
+            CantStopGameData cantStopGame => new CantStopGameDTO
             {
                 Id = cantStopGame.Id,
                 Name = cantStopGame.Name,

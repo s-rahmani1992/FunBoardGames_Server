@@ -36,15 +36,10 @@ namespace FunBoardGames.App.Authentication
 
             using var _dbContext = await _dbContextFactory.CreateDbContextAsync();
 
-            _dbContext.UserCredentials.Add(userCredentials);
-
-            try
+            var errorCode = await _dbContext.AddNewUser(userCredentials.Name, userCredentials.DeviceId, userCredentials.AuthTokenHash);
+            if (errorCode != AuthenticationErrorCode.None)
             {
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                return CreateErrorResponse(AuthenticationErrorCode.UserAlreadyExists);
+                return CreateErrorResponse(errorCode);
             }
 
             return new AuthenticationResponseMessage
@@ -71,10 +66,7 @@ namespace FunBoardGames.App.Authentication
 
             using var _dbContext = await _dbContextFactory.CreateDbContextAsync();
 
-            var userCredentials = await _dbContext.UserCredentials.FirstOrDefaultAsync(u =>
-                u.Name == request.PlayerName &&
-                u.DeviceId == request.DeviceId &&
-                u.DeletedAt == null);
+            var userCredentials = await _dbContext.GetUserCredentials(request.PlayerName, request.DeviceId);
 
             if (userCredentials == null)
             {

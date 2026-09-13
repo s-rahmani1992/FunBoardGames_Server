@@ -4,7 +4,7 @@ using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.Core
 {
-    public abstract class GameControllerT<TPlayer, TGame> : GameController where TPlayer : BoardGamePlayer where TGame : BoardGameEntity
+    public abstract class GameControllerT<TPlayer, TGame> : GameController where TPlayer : BoardGamePlayer where TGame : BoardGameData
     {
         protected readonly List<TPlayer> players = [];
         protected readonly TGame game;

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace FunBoardGames.App.SETGame
 {
-    public class SETGameController : GameControllerT<SETGamePlayer, SETGameEntity>
+    public class SETGameController : GameControllerT<SETGamePlayer, SETGameData>
     {
         private static List<SETCardDTO> SETCardData;
 
@@ -60,7 +60,7 @@ namespace FunBoardGames.App.SETGame
             }
         }
 
-        public SETGameController(uint id, SETGameEntity entity) : base(id, entity, (name, connectionId) => new SETGamePlayer(name, connectionId))
+        public SETGameController(uint id, SETGameData entity) : base(id, entity, (name, connectionId) => new SETGamePlayer(name, connectionId))
         {
             GroupKey = "SET_" + RoomId;
         }
@@ -120,7 +120,7 @@ namespace FunBoardGames.App.SETGame
             {
                 try
                 {
-                    await Task.Delay((int)(game.GuessTime * 1000), guessCancelTokenSource.Token);
+                    await Task.Delay((int)(7000), guessCancelTokenSource.Token);
                     player.AddWrongScore();
                     await clientGroup.SendAsync(SETGameMessageNames.PlayerGuess, new GuessResultResponse
                     {

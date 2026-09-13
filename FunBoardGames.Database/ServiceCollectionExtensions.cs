@@ -1,5 +1,7 @@
+using FunBoardGames.Database.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace FunBoardGames.Database
 {
@@ -11,8 +13,12 @@ namespace FunBoardGames.Database
         /// </summary>
         public static IServiceCollection AddFunBoardGamesDatabase(this IServiceCollection services, string connectionString)
         {
+            var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+            dataSourceBuilder.MapEnum<GameType>("game_type");
+            var dataSource = dataSourceBuilder.Build();
+
             services.AddDbContextFactory<FunBoardGamesDbContext>(options =>
-                options.UseNpgsql(connectionString));
+                options.UseNpgsql(dataSource));
 
             services.AddScoped(sp =>
                 sp.GetRequiredService<IDbContextFactory<FunBoardGamesDbContext>>().CreateDbContext());

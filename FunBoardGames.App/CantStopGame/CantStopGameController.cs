@@ -6,7 +6,7 @@ using FunBoardGames.Network.SignalR.Shared.CantStop;
 
 namespace FunBoardGames.App.CantStopGame
 {
-    public class CantStopGameController : GameControllerT<CantStopGamePlayer, CantStopGameEntity>
+    public class CantStopGameController : GameControllerT<CantStopGamePlayer, CantStopGameData>
     {
         SortedDictionary<int, int> whiteConePositions = new();
         int currentPlayerIndex = 0;
@@ -14,7 +14,7 @@ namespace FunBoardGames.App.CantStopGame
 
         int[] diceValues = new int[4];
 
-        public CantStopGameController(uint id, CantStopGameEntity entity) : base(id, entity, (name, connectionId) => new CantStopGamePlayer(name, connectionId))
+        public CantStopGameController(uint id, CantStopGameData entity) : base(id, entity, (name, connectionId) => new CantStopGamePlayer(name, connectionId))
         {
             GroupKey = "Cant_Stop_" + RoomId;
         }

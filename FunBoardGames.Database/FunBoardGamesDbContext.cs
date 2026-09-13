@@ -1,7 +1,7 @@
+using FunBoardGames.Database.Configurations;
 using FunBoardGames.Database.Entities;
+using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using System.Text.Json;
 
 namespace FunBoardGames.Database
 {
@@ -12,55 +12,67 @@ namespace FunBoardGames.Database
         {
         }
 
-        public DbSet<UserCredentials> UserCredentials => Set<UserCredentials>();
-        public DbSet<BoardGameEntity> Games => Set<BoardGameEntity>();
+        DbSet<UserCredentials> UserCredentials => Set<UserCredentials>();
+        DbSet<BoardGameData> Games => Set<BoardGameData>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<UserCredentials>(entity =>
+            new UserCredentialConfiguration().Configure(modelBuilder.Entity<UserCredentials>());
+
+            modelBuilder.HasPostgresEnum<GameType>(name: "game_type");
+
+            new BoardGameConfiguration().Configure(modelBuilder.Entity<BoardGameData>());
+            
+            new SETGameConfiguration().Configure(modelBuilder.Entity<SETGameData>());
+
+            new CantStopGameConfiguration().Configure(modelBuilder.Entity<CantStopGameData>());
+
+        }
+
+        public async Task<UserCredentials> GetUserCredentials(string playerName, string deviceId)
+        {
+            return await UserCredentials.FirstOrDefaultAsync(uc => uc.Name == playerName && uc.DeviceId == deviceId && uc.DeletedAt == null);
+        }
+
+        public async Task<AuthenticationErrorCode> AddNewUser(string playerName, string deviceId, string authTokenHash)
+        {
+            var userCredentials = new UserCredentials
             {
-                entity.ToTable("UserCredentials");
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired();
-                entity.Property(e => e.AuthTokenHash).IsRequired();
-                entity.Property(e => e.DeviceId).IsRequired();
-                entity.Property(e => e.JoinedAt).IsRequired();
-            });
+                Name = playerName,
+                AuthTokenHash = authTokenHash,
+                DeviceId = deviceId,
+                JoinedAt = DateTimeOffset.UtcNow,
+                LastLoginAt = DateTimeOffset.UtcNow,
+            };
+            UserCredentials.Add(userCredentials);
 
-            modelBuilder.Entity<BoardGameEntity>(entity =>
+            try
             {
-                entity.ToTable("Games");
-                entity.UseTptMappingStrategy();
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.GameType).IsRequired();
-                entity.Property(e => e.Name).IsRequired();
-                entity.Property(e => e.PlayerCount).IsRequired();
-            });
-
-            modelBuilder.Entity<SETGameEntity>(entity =>
+                await SaveChangesAsync();
+            }
+            catch (DbUpdateException)
             {
-                entity.ToTable("SETGames");
-                entity.Property(e => e.GuessTime).IsRequired();
-            });
+                return AuthenticationErrorCode.UserAlreadyExists;
+            }
 
-            modelBuilder.Entity<CantStopGameEntity>(entity =>
-            {
-                entity.ToTable("CantStopGames");
+            return AuthenticationErrorCode.None;
+        }
 
-                var boardData = entity.Property(e => e.BoardData)
-                    .IsRequired()
-                    .HasColumnType("jsonb")
-                    .HasConversion(
-                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-                        v => JsonSerializer.Deserialize<Dictionary<int, int>>(v, (JsonSerializerOptions)null));
+        public async Task<BoardGameData> GetGameById(uint gameId)
+        {
+            return await Games.FirstOrDefaultAsync(g => g.Id == gameId && g.Deleted_At == null);
+        }
 
-                boardData.Metadata.SetValueComparer(new ValueComparer<Dictionary<int, int>>(
-                    (left, right) => (left ?? new()).SequenceEqual(right ?? new()),
-                    dictionary => dictionary.Aggregate(0, (hash, pair) => HashCode.Combine(hash, pair.Key, pair.Value)),
-                    dictionary => new Dictionary<int, int>(dictionary)));
-            });
+        public async Task<BoardGameData> GetGameByType(GameType gameType)
+        {
+            return await Games.FirstOrDefaultAsync(g => g.GameType == gameType && g.Deleted_At == null);
+        }
+
+        public async Task<List<BoardGameData>> GetAllGames()
+        {
+            return await Games.Where(g => g.Deleted_At == null).ToListAsync();
         }
     }
 }
