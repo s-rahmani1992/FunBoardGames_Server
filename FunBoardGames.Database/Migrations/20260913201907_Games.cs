@@ -1,5 +1,5 @@
 ﻿using System;
-using FunBoardGames.Database.Entities;
+using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -22,7 +22,7 @@ namespace FunBoardGames.Database.Migrations
                 {
                     id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    game_type = table.Column<GameType>(type: "game_type", nullable: false, defaultValue: GameType.SET),
+                    game_type = table.Column<BoardGameType>(type: "game_type", nullable: false, defaultValue: BoardGameType.SET),
                     name = table.Column<string>(type: "text", nullable: false, defaultValue: "game"),
                     player_count = table.Column<long>(type: "bigint", nullable: false, defaultValue: 2L),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),

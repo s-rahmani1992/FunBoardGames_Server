@@ -1,4 +1,4 @@
-using FunBoardGames.Database.Entities;
+using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -14,7 +14,7 @@ namespace FunBoardGames.Database
         public static IServiceCollection AddFunBoardGamesDatabase(this IServiceCollection services, string connectionString)
         {
             var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
-            dataSourceBuilder.MapEnum<GameType>("game_type");
+            dataSourceBuilder.MapEnum<BoardGameType>("game_type");
             var dataSource = dataSourceBuilder.Build();
 
             services.AddDbContextFactory<FunBoardGamesDbContext>(options =>

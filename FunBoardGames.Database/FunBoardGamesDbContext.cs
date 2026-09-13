@@ -21,7 +21,7 @@ namespace FunBoardGames.Database
 
             new UserCredentialConfiguration().Configure(modelBuilder.Entity<UserCredentials>());
 
-            modelBuilder.HasPostgresEnum<GameType>(name: "game_type");
+            modelBuilder.HasPostgresEnum<BoardGameType>(name: "game_type");
 
             new BoardGameConfiguration().Configure(modelBuilder.Entity<BoardGameData>());
             
@@ -65,7 +65,7 @@ namespace FunBoardGames.Database
             return await Games.FirstOrDefaultAsync(g => g.Id == gameId && g.Deleted_At == null);
         }
 
-        public async Task<BoardGameData> GetGameByType(GameType gameType)
+        public async Task<BoardGameData> GetGameByType(BoardGameType gameType)
         {
             return await Games.FirstOrDefaultAsync(g => g.GameType == gameType && g.Deleted_At == null);
         }

@@ -60,10 +60,10 @@ namespace FunBoardGames.App.Lobby
             return gameEntity?.Id;
         }
 
-        static GameType ToEntityGameType(BoardGameType gameType) => gameType switch
+        static BoardGameType ToEntityGameType(BoardGameType gameType) => gameType switch
         {
-            BoardGameType.SET => GameType.SET,
-            BoardGameType.CantStop => GameType.CantStop,
+            BoardGameType.SET => BoardGameType.SET,
+            BoardGameType.CantStop => BoardGameType.CantStop,
             _ => throw new ArgumentOutOfRangeException(nameof(gameType)),
         };
 

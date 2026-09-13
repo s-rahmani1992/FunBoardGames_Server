@@ -2,6 +2,7 @@
 using System;
 using FunBoardGames.Database;
 using FunBoardGames.Database.Entities;
+using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -43,10 +44,10 @@ namespace FunBoardGames.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
-                    b.Property<GameType>("GameType")
+                    b.Property<BoardGameType>("GameType")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("game_type")
-                        .HasDefaultValue(GameType.SET)
+                        .HasDefaultValue(BoardGameType.SET)
                         .HasColumnName("game_type");
 
                     b.Property<string>("Name")
