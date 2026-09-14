@@ -233,7 +233,7 @@ namespace FunBoardGames.App
             {
                 await Task.Delay(5000);
 
-                if(setController.HasEnoughCards == false)
+                if(setController.IsDeckEmpty == false)
                 {
                     var newCards = setController.DestributeCards(3);
 

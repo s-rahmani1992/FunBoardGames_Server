@@ -8,8 +8,19 @@ namespace FunBoardGames.Database.Configurations
     {
         public void Configure(EntityTypeBuilder<SETGameData> builder)
         {
-            builder.ToTable("SET_Games");
+            // A null attribute varies across the deck; otherwise it is constant with a value from 0 to 2.
+            builder.ToTable("SET_Games", table =>
+            {
+                table.HasCheckConstraint("CK_SET_Games_color_attribute", "color_attribute BETWEEN 0 AND 2");
+                table.HasCheckConstraint("CK_SET_Games_shape_attribute", "shape_attribute BETWEEN 0 AND 2");
+                table.HasCheckConstraint("CK_SET_Games_count_attribute", "count_attribute BETWEEN 0 AND 2");
+                table.HasCheckConstraint("CK_SET_Games_shading_attribute", "shading_attribute BETWEEN 0 AND 2");
+            });
             builder.Property(e => e.VisibleCardCount).HasColumnName("visible_card_count").IsRequired().HasDefaultValue(12);
+            builder.Property(e => e.ColorAttribute).HasColumnName("color_attribute").IsRequired(false).HasDefaultValue(null);
+            builder.Property(e => e.ShapeAttribute).HasColumnName("shape_attribute").IsRequired(false).HasDefaultValue(null);
+            builder.Property(e => e.CountAttribute).HasColumnName("count_attribute").IsRequired(false).HasDefaultValue(null);
+            builder.Property(e => e.ShadingAttribute).HasColumnName("shading_attribute").IsRequired(false).HasDefaultValue(null);
         }
     }
 }

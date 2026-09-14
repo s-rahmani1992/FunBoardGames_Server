@@ -8,9 +8,7 @@ namespace FunBoardGames.App.SETGame
 {
     public class SETGameController : GameControllerT<SETGamePlayer, SETGameData>
     {
-        private static List<SETCardDTO> SETCardData;
-
-        byte[] cards;
+        List<SETCardDTO> deck = [];
         int cardCursor = 0;
         List<SETCardDTO> placedCards = [];
         List<SETCardDTO> hintCards = [];
@@ -19,7 +17,9 @@ namespace FunBoardGames.App.SETGame
 
         //const int guessTime = 7000;
 
-        public bool HasEnoughCards => cardCursor >= SETCardData.Count() - 1 || placedCards.Count >= 12;
+        public int RemainingCardCount => deck.Count - cardCursor;
+
+        public bool IsDeckEmpty => RemainingCardCount <= 0 || placedCards.Count >= 12;
 
         public List<SETPlayerResultDTO> GetFinalResults()
         {
@@ -36,28 +36,6 @@ namespace FunBoardGames.App.SETGame
 
             results.Sort((a, b) => (b.Corrects - b.Wrongs).CompareTo(a.Corrects - a.Wrongs));
             return results;
-        }
-
-        static SETGameController()
-        {
-            SETCardData = new(81);
-            for (byte i = 0; i < 3; i++)
-            {
-                for (byte j = 0; j < 3; j++)
-                {
-                    for (byte k = 0; k < 3; k++)
-                    {
-                        for (byte l = 0; l < 3; l++)
-                            SETCardData.Add(new SETCardDTO
-                            {
-                                Color = i,
-                                CountIndex = j,
-                                Shape = k,
-                                Shading = l,
-                            });
-                    }
-                }
-            }
         }
 
         public SETGameController(uint id, SETGameData entity) : base(id, entity, (name, connectionId) => new SETGamePlayer(name, connectionId))
@@ -81,34 +59,23 @@ namespace FunBoardGames.App.SETGame
 
         internal void PrepareGame()
         {
-            cards = GetRandomByteList(81);
+            deck = game.GenerateRandomDeck();
+            cardCursor = 0;
+            placedCards.Clear();
+            hintCards.Clear();
         }
 
         internal List<SETCardDTO> DestributeCards(int cardAmount)
         {
-            List<SETCardDTO> newCards = new(cardAmount);
-
-            for (int i = 0; i < cardAmount; i++) 
-            {
-                var cardDTO = SETCardData[cards[cardCursor]];
-                newCards.Add(cardDTO);
-                cardCursor++;
-            }
+            cardAmount = Math.Clamp(cardAmount, 0, RemainingCardCount);
+            List<SETCardDTO> newCards = deck.GetRange(cardCursor, cardAmount);
+            cardCursor += cardAmount;
             
             placedCards.AddRange(newCards);
             hintCards.Clear();
             hintCards = SETGameUtilities.GetAvailableSET(placedCards).ToList();
 
             return newCards;
-        }
-
-        static byte[] GetRandomByteList(int n)
-        {
-            byte[] bytes = new byte[n];
-            for (int i = 0; i < n; i++)
-                bytes[i] = (byte)i;
-            Random r = new Random();
-            return bytes.OrderBy(x => r.Next()).ToArray();
         }
 
         internal async Task<SETGamePlayer> StartGuessProcess(string connectionId, IClientProxy clientGroup)

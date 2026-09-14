@@ -83,6 +83,7 @@ namespace FunBoardGames.App.Lobby
                 GameType = BoardGameType.SET,
                 PlayerCount = setGame.PlayerCount,
                 GuessTime = setGame.PlayerCount,
+                AttributeCount = setGame.AttributeCount,
             },
             CantStopGameData cantStopGame => new CantStopGameDTO
             {
