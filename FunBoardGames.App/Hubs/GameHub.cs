@@ -255,50 +255,6 @@ namespace FunBoardGames.App
             }
         }
 
-        [HubMethodName(SETGameMessageNames.PlayerStartCardVote)]
-        public async Task PlayerStartVote()
-        {
-            SETGameController setController = Context.Items["room"] as SETGameController;
-            setController.ProcessCardVote(Context.ConnectionId, true);
-
-            await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.PlayerStartCardVote, new PlayerStartedVoteResponse
-            {
-                ConnectionId = Context.ConnectionId,
-            });
-        }
-
-        [HubMethodName(SETGameMessageNames.PlayerCardVote)]
-        public async Task PlayerVoted(PlayerVoteRequest voteMsg)
-        {
-            SETGameController setController = Context.Items["room"] as SETGameController;
-            bool? result = setController.ProcessCardVote(Context.ConnectionId, voteMsg.Vote);
-
-            await Clients.OthersInGroup(setController.GroupKey).SendAsync(SETGameMessageNames.PlayerCardVote, new PlayerVoteResponse
-            {
-                ConnectionId = Context.ConnectionId,
-                IsVoteYes = voteMsg.Vote,
-            });
-
-            if (result.HasValue) 
-            {
-
-                await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.CardVoteResult, new VoteResultResponse
-                {
-                    VotePassed = result.Value,
-                });
-
-                if (result.Value)
-                {
-                    await Task.Delay(1000);
-                    var cards = setController.DestributeCards(3);
-                    await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.DistributeCards, new DistributeNewCardsMessage
-                    {
-                        NewCards = cards,
-                    });
-                }
-            }
-        }
-
         #endregion
 
         #region Cant Stop

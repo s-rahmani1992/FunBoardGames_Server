@@ -10,7 +10,6 @@ namespace FunBoardGames.App.SETGame
 
         public int WrongScore { get; set; } = 0;
         public int CorrectScore { get; set; } = 0;
-        public bool? IsVotePositive { get; set; } = null;
 
         public int AddWrongScore(int score = 1)
         {
@@ -22,11 +21,6 @@ namespace FunBoardGames.App.SETGame
         {
             CorrectScore += score;
             return CorrectScore;
-        }
-
-        public void SetVote(bool? isPositive)
-        {
-            IsVotePositive = isPositive;
         }
     }
 }

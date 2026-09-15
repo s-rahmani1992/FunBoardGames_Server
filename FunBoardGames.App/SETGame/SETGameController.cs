@@ -180,25 +180,6 @@ namespace FunBoardGames.App.SETGame
                 
         }
 
-        internal bool? ProcessCardVote(string connectionId, bool vote)
-        {
-            var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
-            player.SetVote(vote);
-
-            int yesVote = players.Where(p => p.IsVotePositive == true).Count();
-            int noVote = players.Where(p => p.IsVotePositive == false).Count();
-
-            if(yesVote + noVote == players.Count())
-            {
-                foreach (var p in players)
-                    p.SetVote(null);
-
-                return yesVote >= noVote;
-            }
-
-            return null;
-        }
-
         internal bool CheckAnySETOnTable()
         {
             hintCards = SETGameUtilities.GetAvailableSET(placedCards).ToList();
