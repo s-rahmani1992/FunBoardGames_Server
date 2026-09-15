@@ -241,7 +241,8 @@ namespace FunBoardGames.App
                         NewCards = newCards,
                     });
                 }
-                else if (setController.CheckAnySETOnTable() == false)
+
+                if (setController.CheckAnySETOnTable() == false)
                 {
                     await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.GameEnded, new GameEndedMessage
                     {

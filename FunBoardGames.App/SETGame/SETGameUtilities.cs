@@ -42,6 +42,22 @@ namespace FunBoardGames.App.SETGame
             return true;
         }
 
+        /// <summary>
+        /// Returns the only card that completes a SET with the two given cards.
+        /// </summary>
+        public static SETCardDTO GetThirdSETCard(SETCardDTO card1, SETCardDTO card2)
+        {
+            return new SETCardDTO
+            {
+                Color = GetThirdValue(card1.Color, card2.Color),
+                Shape = GetThirdValue(card1.Shape, card2.Shape),
+                CountIndex = GetThirdValue(card1.CountIndex, card2.CountIndex),
+                Shading = GetThirdValue(card1.Shading, card2.Shading),
+            };
+        }
+
+        static byte GetThirdValue(byte value1, byte value2) => value1 == value2 ? value1 : (byte)(3 - value1 - value2);
+
         public static IEnumerable<SETCardDTO> GetAvailableSET(IEnumerable<SETCardDTO> cards)
         {
             var cardList = cards.ToList();

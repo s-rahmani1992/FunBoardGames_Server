@@ -19,7 +19,7 @@ namespace FunBoardGames.App.SETGame
 
         public int RemainingCardCount => deck.Count - cardCursor;
 
-        public bool IsDeckEmpty => RemainingCardCount <= 0 || placedCards.Count >= 12;
+        public bool IsDeckEmpty => RemainingCardCount <= 0 || placedCards.Count >= game.VisibleCardCount;
 
         public List<SETPlayerResultDTO> GetFinalResults()
         {
@@ -69,6 +69,7 @@ namespace FunBoardGames.App.SETGame
         internal List<SETCardDTO> DestributeCards(int cardAmount)
         {
             cardAmount = Math.Clamp(cardAmount, 0, RemainingCardCount);
+            ArrangeDeckForSET(cardAmount);
             List<SETCardDTO> newCards = deck.GetRange(cardCursor, cardAmount);
             cardCursor += cardAmount;
             
@@ -78,6 +79,58 @@ namespace FunBoardGames.App.SETGame
 
             return newCards;
         }
+
+        void ArrangeDeckForSET(int cardAmount)
+        {
+            if (cardAmount <= 0)
+                return;
+
+            int dealEnd = cardCursor + cardAmount;
+            if (SETGameUtilities.GetAvailableSET(placedCards.Concat(deck.GetRange(cardCursor, cardAmount))).Any())
+                return;
+
+            List<int>? setDeckIndices = FindDealableSET(cardAmount);
+            if (setDeckIndices == null)
+                return;
+
+            // Swap the SET cards that lie outside the dealt range into it, onto slots that are not part of the SET
+            var freeSlots = Enumerable.Range(cardCursor, cardAmount).Where(slot => !setDeckIndices.Contains(slot));
+            var outsideIndices = setDeckIndices.Where(index => index >= dealEnd);
+            foreach (var (outsideIndex, slot) in outsideIndices.Zip(freeSlots))
+                (deck[slot], deck[outsideIndex]) = (deck[outsideIndex], deck[slot]);
+        }
+
+        List<int>? FindDealableSET(int cardAmount)
+        {
+            // Deck index of every candidate card, -1 for cards already on the table
+            var candidates = placedCards.Select(card => (card, index: -1))
+                .Concat(deck.Skip(cardCursor).Select((card, i) => (card, index: cardCursor + i)))
+                .OrderBy(_ => Random.Shared.Next())
+                .ToList();
+
+            var candidateIndices = candidates.ToDictionary(candidate => GetCardKey(candidate.card), candidate => candidate.index);
+
+            for (int i = 0; i < candidates.Count - 1; i++)
+            {
+                for (int j = i + 1; j < candidates.Count; j++)
+                {
+                    var thirdCard = SETGameUtilities.GetThirdSETCard(candidates[i].card, candidates[j].card);
+                    if (candidateIndices.TryGetValue(GetCardKey(thirdCard), out int thirdIndex) == false)
+                        continue;
+
+                    List<int> deckIndices = new[] { candidates[i].index, candidates[j].index, thirdIndex }
+                        .Where(index => index >= 0)
+                        .ToList();
+
+                    if (deckIndices.Count <= cardAmount)
+                        return deckIndices;
+                }
+            }
+
+            return null;
+        }
+
+        static (byte, byte, byte, byte) GetCardKey(SETCardDTO card) => (card.Color, card.Shape, card.CountIndex, card.Shading);
 
         internal async Task<SETGamePlayer> StartGuessProcess(string connectionId, IClientProxy clientGroup)
         {
