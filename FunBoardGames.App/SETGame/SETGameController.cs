@@ -57,12 +57,13 @@ namespace FunBoardGames.App.SETGame
             };
         }
 
-        internal void PrepareGame()
+        internal List<SETCardDTO> PrepareGame()
         {
             deck = game.GenerateRandomDeck();
             cardCursor = 0;
             placedCards.Clear();
             hintCards.Clear();
+            return DestributeCards(game.VisibleCardCount);
         }
 
         internal List<SETCardDTO> DestributeCards(int cardAmount)

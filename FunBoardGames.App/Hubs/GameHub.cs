@@ -191,8 +191,7 @@ namespace FunBoardGames.App
 
             if (allPlayersLoaded)
             {
-                setController.PrepareGame();
-                var newCards = setController.DestributeCards(12);
+                var newCards = setController.PrepareGame();
 
                 await Task.Delay(4000);
                 await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.DistributeCards, new DistributeNewCardsMessage
