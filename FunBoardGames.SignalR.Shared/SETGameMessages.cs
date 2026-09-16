@@ -36,6 +36,7 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
         public string ConnectionId { get; set; }
         public int Corrects { get; set; }
         public int Wrongs { get; set; }
+        public bool IsBusted { get; set; }
     }
 
     public class GameBeginMessage
@@ -61,6 +62,7 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
         public bool GuessedCorrect { get; set; }
         public int CorrectScore { get; set; }
         public int WrongScore { get; set; }
+        public bool IsBusted { get; set; }
         public List<SETCardDTO>? GuessedCards { get; set; } = null;
         public List<SETCardDTO>? NewCards { get; set; } = null;
         public List<SETPlayerResultDTO>? FinalScores { get; set; } = null;

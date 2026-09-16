@@ -17,8 +17,8 @@ namespace FunBoardGames.App.Core
         }
 
         public override uint GameId => game.Id;
-
         public override int PlayerCount => players.Count;
+        public override int RequiredPlayerCount => (int)game.PlayerCount;
 
         public override bool AddPlayer(string connectionId, string playerName)
         {

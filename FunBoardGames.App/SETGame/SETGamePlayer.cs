@@ -10,6 +10,7 @@ namespace FunBoardGames.App.SETGame
 
         public int WrongScore { get; set; } = 0;
         public int CorrectScore { get; set; } = 0;
+        public bool IsBusted { get; set; } = false;
 
         public int AddWrongScore(int score = 1)
         {

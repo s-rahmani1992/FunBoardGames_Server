@@ -43,10 +43,11 @@ namespace FunBoardGames.App.SETGame
                     ConnectionId = player.ConnectionId,
                     Corrects = player.CorrectScore,
                     Wrongs = player.WrongScore,
+                    IsBusted = player.IsBusted,
                 });
             }
 
-            results.Sort((a, b) => (b.Corrects - b.Wrongs).CompareTo(a.Corrects - a.Wrongs));
+            results.Sort((a, b) => b.Corrects.CompareTo(a.Corrects));
             return results;
         }
 
@@ -63,8 +64,6 @@ namespace FunBoardGames.App.SETGame
             lock (stateLock)
                 FinishGame();
         }
-
-        public override int RequiredPlayerCount => 2;
 
         public override RoomInfoDTO GetInfo()
         {
@@ -264,7 +263,8 @@ namespace FunBoardGames.App.SETGame
                 if (isFinished || guessingConnectionId != null)
                     return null;
 
-                if (players.Exists(player => player.ConnectionId == connectionId) == false)
+                var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+                if (player == null || player.IsBusted)
                     return null;
 
                 guessingConnectionId = connectionId;
@@ -299,16 +299,24 @@ namespace FunBoardGames.App.SETGame
 
                 if (player != null)
                 {
-                    player.AddWrongScore();
+                    AddWrongGuess(player);
                     guessResult = CreateGuessResult(player, false, null);
+
+                    if (IsOnePlayerLeft())
+                        guessResult.FinalScores = FinishGame();
                 }
 
-                if (isRoundTimeoutPending)
+                if (guessResult?.FinalScores == null && isRoundTimeoutPending)
                     timeoutMessage = TimeoutRound();
             }
 
             if (guessResult != null)
+            {
                 await ClientGroup.SendAsync(SETGameMessageNames.PlayerGuess, guessResult);
+
+                if (guessResult.FinalScores != null)
+                    onGameFinished(this);
+            }
 
             if (timeoutMessage != null)
                 await SendRoundTimeout(timeoutMessage);
@@ -342,7 +350,7 @@ namespace FunBoardGames.App.SETGame
                     }
                 }
                 else
-                    player.AddWrongScore();
+                    AddWrongGuess(player);
 
                 var result = CreateGuessResult(player, isCorrect, guessCards);
 
@@ -357,12 +365,23 @@ namespace FunBoardGames.App.SETGame
                     else
                         result.RoundStartTime = StartRoundTimer();
                 }
+                // Only one player can still guess, so the game ends
+                else if (IsOnePlayerLeft())
+                    result.FinalScores = FinishGame();
                 else if (isRoundTimeoutPending)
                     timeoutMessage = TimeoutRound();
 
                 return result;
             }
         }
+
+        void AddWrongGuess(SETGamePlayer player)
+        {
+            if (player.AddWrongScore() >= game.WrongLimit)
+                player.IsBusted = true;
+        }
+
+        bool IsOnePlayerLeft() => players.Count(player => player.IsBusted == false) <= 1;
 
         static GuessResultResponse CreateGuessResult(SETGamePlayer player, bool isCorrect, List<SETCardDTO>? guessCards)
         {
@@ -372,6 +391,7 @@ namespace FunBoardGames.App.SETGame
                 GuessedCorrect = isCorrect,
                 WrongScore = player.WrongScore,
                 CorrectScore = player.CorrectScore,
+                IsBusted = player.IsBusted,
                 GuessedCards = guessCards,
             };
         }
