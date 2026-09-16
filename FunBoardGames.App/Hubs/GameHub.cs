@@ -182,7 +182,7 @@ namespace FunBoardGames.App
 
         #region SET Game
 
-        [HubMethodName(SETGameMessageNames.GameLoaded)]
+        [HubMethodName(SETGameMessageNames.GameStarted)]
         public async Task SignalGameLoaded()
         {
             SETGameController setController = Context.Items["room"] as SETGameController;
@@ -193,9 +193,7 @@ namespace FunBoardGames.App
             {
                 var newCards = setController.PrepareGame();
 
-                await Task.Delay(4000);
-                await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.DistributeCards, new DistributeNewCardsMessage
-                {
+                await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.GameStarted, new GameBeginMessage() { 
                     NewCards = newCards,
                 });
             }
@@ -205,53 +203,25 @@ namespace FunBoardGames.App
         public async Task PlayerStartGuess()
         {
             SETGameController setController = Context.Items["room"] as SETGameController;
+            var guessStartTime = setController.StartGuessProcess(Context.ConnectionId, Clients.Group(setController.GroupKey));
             await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.PlayerGuessStart, new PlayerGuessStartMessage
             {
                 ConnectionId = Context.ConnectionId,
+                GuessStartTime = guessStartTime,
             });
-
-            var player = await setController.StartGuessProcess(Context.ConnectionId, Clients.Group(setController.GroupKey));
         }
 
         [HubMethodName(SETGameMessageNames.PlayerGuess)]
         public async Task ProcessGuess(PlayerCardGuessRequest cardGuessMsg)
         {
             SETGameController setController = Context.Items["room"] as SETGameController;
-            SETGamePlayer player;
-            bool isCorrect = setController.ProcessGuess(Context.ConnectionId, cardGuessMsg.GuessedCards, out player);
-            await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.PlayerGuess, new GuessResultResponse
+            var guessResult = setController.ProcessGuess(Context.ConnectionId, cardGuessMsg.GuessedCards);
+            await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.PlayerGuess, guessResult);
+
+            if (guessResult.FinalScores != null)
             {
-                ConnectionId = Context.ConnectionId,
-                GuessedCorrect = isCorrect,
-                WrongScore = player.WrongScore,
-                CorrectScore = player.CorrectScore,
-                GuessedCards = cardGuessMsg.GuessedCards,
-            });
-
-            if (isCorrect)
-            {
-                await Task.Delay(5000);
-
-                if(setController.IsDeckEmpty == false)
-                {
-                    var newCards = setController.DestributeCards(3);
-
-                    await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.DistributeCards, new DistributeNewCardsMessage
-                    {
-                        NewCards = newCards,
-                    });
-                }
-
-                if (setController.CheckAnySETOnTable() == false)
-                {
-                    await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.GameEnded, new GameEndedMessage
-                    {
-                        FinalScores = setController.GetFinalResults(),
-                    });
-
-                    var lobbyService = _provider.GetRequiredService<MatchMakingService>();
-                    lobbyService.RemoveGame(setController);
-                }
+                var lobbyService = _provider.GetRequiredService<MatchMakingService>();
+                lobbyService.RemoveGame(setController);
             }
         }
 

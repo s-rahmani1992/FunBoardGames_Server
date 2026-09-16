@@ -1,15 +1,14 @@
 ﻿
+using System;
 using System.Collections.Generic;
 
 namespace FunBoardGames.Network.SignalR.Shared.SET
 {
     public static class SETGameMessageNames
     {
-        public const string GameLoaded = "SET_GameLoaded";
-        public const string DistributeCards = "SET_DistributeCards";
+        public const string GameStarted = "SET_GameStarted";
         public const string PlayerGuessStart = "SET_PlayerGuessStart";
         public const string PlayerGuess = "SET_PlayerGuessResult";
-        public const string GameEnded = "SET_GameEnded";
     }
 
     public class SETCardDTO
@@ -38,7 +37,7 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
         public int Wrongs { get; set; }
     }
 
-    public class DistributeNewCardsMessage
+    public class GameBeginMessage
     {
         public List<SETCardDTO> NewCards { get; set; }
     }
@@ -46,6 +45,7 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
     public class PlayerGuessStartMessage
     {
         public string ConnectionId { get; set; }
+        public DateTimeOffset GuessStartTime { get; set; }
     }
 
     public class PlayerCardGuessRequest
@@ -60,10 +60,7 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
         public int CorrectScore { get; set; }
         public int WrongScore { get; set; }
         public List<SETCardDTO>? GuessedCards { get; set; } = null;
-    }
-
-    public class GameEndedMessage
-    {
-        public List<SETPlayerResultDTO> FinalScores { get; set; }
+        public List<SETCardDTO>? NewCards { get; set; } = null;
+        public List<SETPlayerResultDTO>? FinalScores { get; set; } = null;
     }
 }

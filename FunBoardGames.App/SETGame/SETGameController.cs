@@ -132,36 +132,30 @@ namespace FunBoardGames.App.SETGame
 
         static (byte, byte, byte, byte) GetCardKey(SETCardDTO card) => (card.Color, card.Shape, card.CountIndex, card.Shading);
 
-        internal async Task<SETGamePlayer> StartGuessProcess(string connectionId, IClientProxy clientGroup)
+        internal DateTimeOffset StartGuessProcess(string connectionId, IClientProxy clientGroup)
         {
             guessCancelTokenSource?.Cancel();
             guessCancelTokenSource = new CancellationTokenSource();
             var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+            var guessStartTime = DateTimeOffset.UtcNow;
             _ = Task.Run(async () =>
             {
                 try
                 {
                     await Task.Delay((int)(7000), guessCancelTokenSource.Token);
                     player.AddWrongScore();
-                    await clientGroup.SendAsync(SETGameMessageNames.PlayerGuess, new GuessResultResponse
-                    {
-                        ConnectionId = player.ConnectionId,
-                        GuessedCorrect = false,
-                        WrongScore = player.WrongScore,
-                        CorrectScore = player.CorrectScore,
-                        GuessedCards = null,
-                    });
+                    await clientGroup.SendAsync(SETGameMessageNames.PlayerGuess, CreateGuessResult(player, false, null));
                 }
                 catch (OperationCanceledException) { }
             });
             
-            return player;
+            return guessStartTime;
         }
 
-        internal bool ProcessGuess(string connectionId, List<SETCardDTO> guessCards, out SETGamePlayer player)
+        internal GuessResultResponse ProcessGuess(string connectionId, List<SETCardDTO> guessCards)
         {
             guessCancelTokenSource.Cancel();
-            player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+            var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
             bool isCorrect = SETGameUtilities.IsSET(guessCards[0], guessCards[1], guessCards[2]);
             if (isCorrect)
             {
@@ -176,8 +170,30 @@ namespace FunBoardGames.App.SETGame
             else
                 player.AddWrongScore();
 
-            return isCorrect;
-                
+            var result = CreateGuessResult(player, isCorrect, guessCards);
+
+            if (isCorrect)
+            {
+                if (IsDeckEmpty == false)
+                    result.NewCards = DestributeCards(3);
+
+                if (CheckAnySETOnTable() == false)
+                    result.FinalScores = GetFinalResults();
+            }
+
+            return result;
+        }
+
+        static GuessResultResponse CreateGuessResult(SETGamePlayer player, bool isCorrect, List<SETCardDTO>? guessCards)
+        {
+            return new GuessResultResponse
+            {
+                ConnectionId = player.ConnectionId,
+                GuessedCorrect = isCorrect,
+                WrongScore = player.WrongScore,
+                CorrectScore = player.CorrectScore,
+                GuessedCards = guessCards,
+            };
         }
 
         internal bool CheckAnySETOnTable()
