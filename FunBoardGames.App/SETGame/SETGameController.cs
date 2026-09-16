@@ -13,9 +13,21 @@ namespace FunBoardGames.App.SETGame
         List<SETCardDTO> placedCards = [];
         List<SETCardDTO> hintCards = [];
 
-        CancellationTokenSource guessCancelTokenSource;
+        readonly IHubContext<GameHub> hubContext;
+        readonly Action<GameController> onGameFinished;
 
-        //const int guessTime = 7000;
+        // Guards the game state, which is changed by hub calls and by the round and guess timers concurrently
+        readonly object stateLock = new();
+
+        CancellationTokenSource? roundCancelTokenSource;
+        CancellationTokenSource? guessCancelTokenSource;
+        string? guessingConnectionId;
+        bool isRoundTimeoutPending;
+        bool isFinished;
+
+        const int guessTime = 7000;
+
+        IClientProxy ClientGroup => hubContext.Clients.Group(GroupKey);
 
         public int RemainingCardCount => deck.Count - cardCursor;
 
@@ -38,9 +50,18 @@ namespace FunBoardGames.App.SETGame
             return results;
         }
 
-        public SETGameController(uint id, SETGameData entity) : base(id, entity, (name, connectionId) => new SETGamePlayer(name, connectionId))
+        public SETGameController(uint id, SETGameData entity, IHubContext<GameHub> hubContext, Action<GameController> onGameFinished)
+            : base(id, entity, (name, connectionId) => new SETGamePlayer(name, connectionId))
         {
             GroupKey = "SET_" + RoomId;
+            this.hubContext = hubContext;
+            this.onGameFinished = onGameFinished;
+        }
+
+        public override void OnRemoved()
+        {
+            lock (stateLock)
+                FinishGame();
         }
 
         public override int RequiredPlayerCount => 2;
@@ -57,13 +78,21 @@ namespace FunBoardGames.App.SETGame
             };
         }
 
-        internal List<SETCardDTO> PrepareGame()
+        internal GameBeginMessage PrepareGame()
         {
-            deck = game.GenerateRandomDeck();
-            cardCursor = 0;
-            placedCards.Clear();
-            hintCards.Clear();
-            return DestributeCards(game.VisibleCardCount);
+            lock (stateLock)
+            {
+                deck = game.GenerateRandomDeck();
+                cardCursor = 0;
+                placedCards.Clear();
+                hintCards.Clear();
+                isFinished = false;
+                return new GameBeginMessage
+                {
+                    NewCards = DestributeCards(game.VisibleCardCount),
+                    RoundStartTime = StartRoundTimer(),
+                };
+            }
         }
 
         internal List<SETCardDTO> DestributeCards(int cardAmount)
@@ -132,56 +161,207 @@ namespace FunBoardGames.App.SETGame
 
         static (byte, byte, byte, byte) GetCardKey(SETCardDTO card) => (card.Color, card.Shape, card.CountIndex, card.Shading);
 
-        internal DateTimeOffset StartGuessProcess(string connectionId, IClientProxy clientGroup)
+        #region Round Timer
+
+        /// <summary>
+        /// Starts a new round, replacing any running round timer, and returns the round start time.
+        /// Must be called while holding <see cref="stateLock"/>.
+        /// </summary>
+        DateTimeOffset StartRoundTimer()
         {
-            guessCancelTokenSource?.Cancel();
-            guessCancelTokenSource = new CancellationTokenSource();
-            var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
-            var guessStartTime = DateTimeOffset.UtcNow;
+            var roundStartTime = DateTimeOffset.UtcNow;
+            roundCancelTokenSource?.Cancel();
+            roundCancelTokenSource = new CancellationTokenSource();
+            isRoundTimeoutPending = false;
+
+            var token = roundCancelTokenSource.Token;
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await Task.Delay((int)(7000), guessCancelTokenSource.Token);
-                    player.AddWrongScore();
-                    await clientGroup.SendAsync(SETGameMessageNames.PlayerGuess, CreateGuessResult(player, false, null));
+                    await Task.Delay(TimeSpan.FromSeconds(game.RoundTime), token);
+                    await OnRoundTimerEnded(token);
                 }
                 catch (OperationCanceledException) { }
             });
-            
-            return guessStartTime;
+
+            return roundStartTime;
         }
 
-        internal GuessResultResponse ProcessGuess(string connectionId, List<SETCardDTO> guessCards)
+        async Task OnRoundTimerEnded(CancellationToken token)
         {
-            guessCancelTokenSource.Cancel();
-            var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
-            bool isCorrect = SETGameUtilities.IsSET(guessCards[0], guessCards[1], guessCards[2]);
-            if (isCorrect)
+            RoundTimeoutMessage timeoutMessage;
+            lock (stateLock)
             {
-                player.AddCorrectScore();
+                if (token.IsCancellationRequested)
+                    return;
 
-                foreach(var guessCard in guessCards)
+                // A player is guessing, so the timeout waits until the guess is resolved
+                if (guessingConnectionId != null)
                 {
-                    int index = placedCards.FindIndex((card) => card.Equals(guessCard));
-                    placedCards.RemoveAt(index);
+                    isRoundTimeoutPending = true;
+                    return;
                 }
+
+                timeoutMessage = TimeoutRound();
             }
+
+            await SendRoundTimeout(timeoutMessage);
+        }
+
+        /// <summary>
+        /// Replaces a SET on the table with new cards and starts the next round. Must be called while holding <see cref="stateLock"/>.
+        /// </summary>
+        RoundTimeoutMessage TimeoutRound()
+        {
+            var removedCards = SETGameUtilities.GetAvailableSET(placedCards).ToList();
+            foreach (var removedCard in removedCards)
+                placedCards.Remove(removedCard);
+
+            var timeoutMessage = new RoundTimeoutMessage { RemovedCards = removedCards };
+
+            if (IsDeckEmpty == false)
+                timeoutMessage.NewCards = DestributeCards(3);
+
+            if (CheckAnySETOnTable() == false)
+                timeoutMessage.FinalScores = FinishGame();
             else
-                player.AddWrongScore();
+                timeoutMessage.RoundStartTime = StartRoundTimer();
 
-            var result = CreateGuessResult(player, isCorrect, guessCards);
+            return timeoutMessage;
+        }
 
-            if (isCorrect)
+        internal async Task SendRoundTimeout(RoundTimeoutMessage timeoutMessage)
+        {
+            await ClientGroup.SendAsync(SETGameMessageNames.RoundTimeout, timeoutMessage);
+
+            if (timeoutMessage.FinalScores != null)
+                onGameFinished(this);
+        }
+
+        /// <summary>
+        /// Stops every timer and returns the final results. Must be called while holding <see cref="stateLock"/>.
+        /// </summary>
+        List<SETPlayerResultDTO> FinishGame()
+        {
+            isFinished = true;
+            isRoundTimeoutPending = false;
+            guessingConnectionId = null;
+            roundCancelTokenSource?.Cancel();
+            guessCancelTokenSource?.Cancel();
+            return GetFinalResults();
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Starts a guess for the player, or returns null when the game is over or another player is already guessing.
+        /// </summary>
+        internal DateTimeOffset? StartGuessProcess(string connectionId)
+        {
+            lock (stateLock)
             {
-                if (IsDeckEmpty == false)
-                    result.NewCards = DestributeCards(3);
+                if (isFinished || guessingConnectionId != null)
+                    return null;
 
-                if (CheckAnySETOnTable() == false)
-                    result.FinalScores = GetFinalResults();
+                if (players.Exists(player => player.ConnectionId == connectionId) == false)
+                    return null;
+
+                guessingConnectionId = connectionId;
+                guessCancelTokenSource = new CancellationTokenSource();
+
+                var token = guessCancelTokenSource.Token;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(guessTime, token);
+                        await OnGuessTimerEnded(token);
+                    }
+                    catch (OperationCanceledException) { }
+                });
+
+                return DateTimeOffset.UtcNow;
+            }
+        }
+
+        async Task OnGuessTimerEnded(CancellationToken token)
+        {
+            GuessResultResponse? guessResult = null;
+            RoundTimeoutMessage? timeoutMessage = null;
+            lock (stateLock)
+            {
+                if (token.IsCancellationRequested)
+                    return;
+
+                var player = players.FirstOrDefault(player => player.ConnectionId == guessingConnectionId);
+                guessingConnectionId = null;
+
+                if (player != null)
+                {
+                    player.AddWrongScore();
+                    guessResult = CreateGuessResult(player, false, null);
+                }
+
+                if (isRoundTimeoutPending)
+                    timeoutMessage = TimeoutRound();
             }
 
-            return result;
+            if (guessResult != null)
+                await ClientGroup.SendAsync(SETGameMessageNames.PlayerGuess, guessResult);
+
+            if (timeoutMessage != null)
+                await SendRoundTimeout(timeoutMessage);
+        }
+
+        /// <summary>
+        /// Resolves the guess of the guessing player, or returns null when the player is not the one guessing.
+        /// If the round timed out during a wrong guess, <paramref name="timeoutMessage"/> holds the delayed round timeout.
+        /// </summary>
+        internal GuessResultResponse? ProcessGuess(string connectionId, List<SETCardDTO> guessCards, out RoundTimeoutMessage? timeoutMessage)
+        {
+            timeoutMessage = null;
+            lock (stateLock)
+            {
+                if (guessingConnectionId != connectionId)
+                    return null;
+
+                guessCancelTokenSource?.Cancel();
+                guessingConnectionId = null;
+
+                var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+                bool isCorrect = SETGameUtilities.IsSET(guessCards[0], guessCards[1], guessCards[2]);
+                if (isCorrect)
+                {
+                    player.AddCorrectScore();
+
+                    foreach(var guessCard in guessCards)
+                    {
+                        int index = placedCards.FindIndex((card) => card.Equals(guessCard));
+                        placedCards.RemoveAt(index);
+                    }
+                }
+                else
+                    player.AddWrongScore();
+
+                var result = CreateGuessResult(player, isCorrect, guessCards);
+
+                if (isCorrect)
+                {
+                    if (IsDeckEmpty == false)
+                        result.NewCards = DestributeCards(3);
+
+                    // A correct guess starts a new round, which also drops any timeout that was waiting on this guess
+                    if (CheckAnySETOnTable() == false)
+                        result.FinalScores = FinishGame();
+                    else
+                        result.RoundStartTime = StartRoundTimer();
+                }
+                else if (isRoundTimeoutPending)
+                    timeoutMessage = TimeoutRound();
+
+                return result;
+            }
         }
 
         static GuessResultResponse CreateGuessResult(SETGamePlayer player, bool isCorrect, List<SETCardDTO>? guessCards)

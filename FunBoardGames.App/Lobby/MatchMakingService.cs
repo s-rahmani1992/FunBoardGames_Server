@@ -5,6 +5,7 @@ using FunBoardGames.Database;
 using FunBoardGames.Database.Entities;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.SignalR.Shared;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 
@@ -12,12 +13,14 @@ namespace FunBoardGames.App.Lobby
 {
     public class MatchMakingService
     {
-        public MatchMakingService(IDbContextFactory<FunBoardGamesDbContext> dbContextFactory)
+        public MatchMakingService(IDbContextFactory<FunBoardGamesDbContext> dbContextFactory, IHubContext<GameHub> hubContext)
         {
             _dbContextFactory = dbContextFactory;
+            _hubContext = hubContext;
         }
 
         readonly IDbContextFactory<FunBoardGamesDbContext> _dbContextFactory;
+        readonly IHubContext<GameHub> _hubContext;
         readonly ConcurrentDictionary<uint, GameMatchMaker> _activeMatchMakers = new();
 
         public async Task<GameController> JoinGame(uint gameId, string connectionId, string playerName)
@@ -32,7 +35,7 @@ namespace FunBoardGames.App.Lobby
 
             GameMatchMaker newMatchMaker = gameEntity switch
             {
-                SETGameData setGame => new GameMatchMakerT<SETGameController>(roomId => new SETGameController(roomId, setGame)),
+                SETGameData setGame => new GameMatchMakerT<SETGameController>(roomId => new SETGameController(roomId, setGame, _hubContext, RemoveGame)),
                 CantStopGameData cantStopGame => new GameMatchMakerT<CantStopGameController>(roomId => new CantStopGameController(roomId, cantStopGame)),
                 _ => null,
             };
@@ -83,6 +86,7 @@ namespace FunBoardGames.App.Lobby
                 GameType = BoardGameType.SET,
                 PlayerCount = setGame.PlayerCount,
                 GuessTime = setGame.PlayerCount,
+                RoundTime = setGame.RoundTime,
                 AttributeCount = setGame.AttributeCount,
             },
             CantStopGameData cantStopGame => new CantStopGameDTO

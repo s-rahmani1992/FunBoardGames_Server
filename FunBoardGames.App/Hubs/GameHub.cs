@@ -191,11 +191,8 @@ namespace FunBoardGames.App
 
             if (allPlayersLoaded)
             {
-                var newCards = setController.PrepareGame();
-
-                await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.GameStarted, new GameBeginMessage() { 
-                    NewCards = newCards,
-                });
+                var gameBeginMessage = setController.PrepareGame();
+                await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.GameStarted, gameBeginMessage);
             }
         }
 
@@ -203,11 +200,14 @@ namespace FunBoardGames.App
         public async Task PlayerStartGuess()
         {
             SETGameController setController = Context.Items["room"] as SETGameController;
-            var guessStartTime = setController.StartGuessProcess(Context.ConnectionId, Clients.Group(setController.GroupKey));
+            var guessStartTime = setController.StartGuessProcess(Context.ConnectionId);
+            if (guessStartTime == null)
+                return;
+
             await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.PlayerGuessStart, new PlayerGuessStartMessage
             {
                 ConnectionId = Context.ConnectionId,
-                GuessStartTime = guessStartTime,
+                GuessStartTime = guessStartTime.Value,
             });
         }
 
@@ -215,7 +215,10 @@ namespace FunBoardGames.App
         public async Task ProcessGuess(PlayerCardGuessRequest cardGuessMsg)
         {
             SETGameController setController = Context.Items["room"] as SETGameController;
-            var guessResult = setController.ProcessGuess(Context.ConnectionId, cardGuessMsg.GuessedCards);
+            var guessResult = setController.ProcessGuess(Context.ConnectionId, cardGuessMsg.GuessedCards, out var timeoutMessage);
+            if (guessResult == null)
+                return;
+
             await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.PlayerGuess, guessResult);
 
             if (guessResult.FinalScores != null)
@@ -223,6 +226,9 @@ namespace FunBoardGames.App
                 var lobbyService = _provider.GetRequiredService<MatchMakingService>();
                 lobbyService.RemoveGame(setController);
             }
+
+            if (timeoutMessage != null)
+                await setController.SendRoundTimeout(timeoutMessage);
         }
 
         #endregion

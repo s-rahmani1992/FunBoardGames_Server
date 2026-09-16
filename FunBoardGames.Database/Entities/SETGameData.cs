@@ -8,6 +8,7 @@ namespace FunBoardGames.Database.Entities
         const byte AttributeValueCount = 3;
 
         public int VisibleCardCount { get; set; } = 12;
+        public int RoundTime { get; set; } = 30;
         public int? ColorAttribute { get; set; } = null;
         public int? ShapeAttribute { get; set; } = null;
         public int? CountAttribute { get; set; } = null;

@@ -28,7 +28,8 @@ namespace FunBoardGames.App.Lobby
 
         protected void RemoveGame(uint roomId)
         {
-            games.TryRemove(roomId, out _);
+            if (games.TryRemove(roomId, out T? game))
+                game.OnRemoved();
         }
 
         T CreateGame()

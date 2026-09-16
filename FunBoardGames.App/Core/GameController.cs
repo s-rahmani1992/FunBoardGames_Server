@@ -21,6 +21,11 @@ namespace FunBoardGames.App.Core
         public abstract IEnumerable<PlayerInfoDTO> GetPlayers();
         public abstract RoomInfoDTO GetInfo();
 
+        /// <summary>
+        /// Called once the room is removed from matchmaking, to release anything still running for it.
+        /// </summary>
+        public virtual void OnRemoved() { }
+
         public uint RoomId { get; private set; }
         public string RoomName { get; private set; } = string.Empty;
         public string GroupKey { get; protected set; }
