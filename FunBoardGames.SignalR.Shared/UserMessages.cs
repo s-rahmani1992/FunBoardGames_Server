@@ -24,6 +24,7 @@ namespace FunBoardGames.SignalR.Shared
         public float GuessTime { get; set; }
         public int RoundTime { get; set; }
         public int WrongLimit { get; set; }
+        public int? HintLimit { get; set; }
         public int AttributeCount { get; set; }
     }
 

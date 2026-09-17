@@ -24,6 +24,7 @@ namespace FunBoardGames.App.SETGame
         string? guessingConnectionId;
         bool isRoundTimeoutPending;
         bool isFinished;
+        int roundNumber;
 
         const int guessTime = 7000;
 
@@ -85,6 +86,7 @@ namespace FunBoardGames.App.SETGame
                 cardCursor = 0;
                 placedCards.Clear();
                 hintCards.Clear();
+                roundNumber = 0;
                 isFinished = false;
                 return new GameBeginMessage
                 {
@@ -102,8 +104,6 @@ namespace FunBoardGames.App.SETGame
             cardCursor += cardAmount;
             
             placedCards.AddRange(newCards);
-            hintCards.Clear();
-            hintCards = SETGameUtilities.GetAvailableSET(placedCards).ToList();
 
             return newCards;
         }
@@ -164,11 +164,13 @@ namespace FunBoardGames.App.SETGame
 
         /// <summary>
         /// Starts a new round, replacing any running round timer, and returns the round start time.
-        /// Must be called while holding <see cref="stateLock"/>.
+        /// Stores a SET on the table for card hints. Must be called while holding <see cref="stateLock"/>.
         /// </summary>
         DateTimeOffset StartRoundTimer()
         {
             var roundStartTime = DateTimeOffset.UtcNow;
+            roundNumber++;
+            hintCards = SETGameUtilities.GetAvailableSET(placedCards).ToList();
             roundCancelTokenSource?.Cancel();
             roundCancelTokenSource = new CancellationTokenSource();
             isRoundTimeoutPending = false;
@@ -396,10 +398,35 @@ namespace FunBoardGames.App.SETGame
             };
         }
 
-        internal bool CheckAnySETOnTable()
+        internal bool CheckAnySETOnTable() => SETGameUtilities.GetAvailableSET(placedCards).Any();
+
+        /// <summary>
+        /// Uses a card hint power up of the player and returns the first card of the round's SET, or returns null
+        /// when another player is guessing, the player already used a hint this round or reached the game's hint limit.
+        /// </summary>
+        internal CardHintResponse? UseCardHint(string connectionId)
         {
-            hintCards = SETGameUtilities.GetAvailableSET(placedCards).ToList();
-            return hintCards.Count > 0;
+            lock (stateLock)
+            {
+                if (isFinished || guessingConnectionId != null || hintCards.Count == 0)
+                    return null;
+
+                var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+                if (player == null || player.IsBusted || player.LastHintRound == roundNumber)
+                    return null;
+
+                if (game.HintLimit != null && player.UsedHintCount >= game.HintLimit)
+                    return null;
+
+                player.UsedHintCount++;
+                player.LastHintRound = roundNumber;
+
+                return new CardHintResponse
+                {
+                    Card = hintCards[0],
+                    UsedHints = player.UsedHintCount,
+                };
+            }
         }
     }
 }

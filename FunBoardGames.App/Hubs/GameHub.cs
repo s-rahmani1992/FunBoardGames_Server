@@ -231,6 +231,22 @@ namespace FunBoardGames.App
                 await setController.SendRoundTimeout(timeoutMessage);
         }
 
+        [HubMethodName(SETGameMessageNames.CardHint)]
+        public async Task UseCardHint()
+        {
+            SETGameController setController = Context.Items["room"] as SETGameController;
+            var hintResponse = setController.UseCardHint(Context.ConnectionId);
+            if (hintResponse == null)
+                return;
+
+            await Clients.Caller.SendAsync(SETGameMessageNames.CardHint, hintResponse);
+            await Clients.OthersInGroup(setController.GroupKey).SendAsync(SETGameMessageNames.PlayerUsedHint, new PlayerUsedHintMessage
+            {
+                ConnectionId = Context.ConnectionId,
+                UsedHints = hintResponse.UsedHints,
+            });
+        }
+
         #endregion
 
         #region Cant Stop

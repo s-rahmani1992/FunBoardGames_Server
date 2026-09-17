@@ -88,6 +88,7 @@ namespace FunBoardGames.App.Lobby
                 GuessTime = setGame.PlayerCount,
                 RoundTime = setGame.RoundTime,
                 WrongLimit = setGame.WrongLimit,
+                HintLimit = setGame.HintLimit,
                 AttributeCount = setGame.AttributeCount,
             },
             CantStopGameData cantStopGame => new CantStopGameDTO

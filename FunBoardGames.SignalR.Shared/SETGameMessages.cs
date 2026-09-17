@@ -10,6 +10,8 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
         public const string PlayerGuessStart = "SET_PlayerGuessStart";
         public const string PlayerGuess = "SET_PlayerGuessResult";
         public const string RoundTimeout = "SET_RoundTimeout";
+        public const string CardHint = "SET_CardHint";
+        public const string PlayerUsedHint = "SET_PlayerUsedHint";
     }
 
     public class SETCardDTO
@@ -75,5 +77,17 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
         public List<SETCardDTO>? NewCards { get; set; } = null;
         public List<SETPlayerResultDTO>? FinalScores { get; set; } = null;
         public DateTimeOffset? RoundStartTime { get; set; } = null;
+    }
+
+    public class CardHintResponse
+    {
+        public SETCardDTO Card { get; set; }
+        public int UsedHints { get; set; }
+    }
+
+    public class PlayerUsedHintMessage
+    {
+        public string ConnectionId { get; set; }
+        public int UsedHints { get; set; }
     }
 }
