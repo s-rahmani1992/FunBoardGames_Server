@@ -11,7 +11,7 @@ namespace FunBoardGames.Network.SignalR.Shared
     {
         public int UserId { get; set; }
         public string PlayerName { get; set; } = string.Empty;
-        public string ConnectionId { get; set; } = string.Empty;
+        public int Avatar { get; set; } = 0;
     }
 
     public enum AuthenticationErrorCode
@@ -31,7 +31,7 @@ namespace FunBoardGames.Network.SignalR.Shared
 
     public class SignInRequestMessage
     {
-        public string PlayerName { get; set; } = string.Empty;
+        public int UserId { get; set; }
         public string DeviceId { get; set; } = string.Empty;
         public string AuthToken { get; set; } = string.Empty;
     }

@@ -20,14 +20,14 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
 
     public class PlayerScoreDTO
     {
-        public string PlayerConnectionId { get; set; }
+        public int UserId { get; set; }
         public int Score { get; set; }
     }
 
     public class GameDataMessage
     {
         public CantStopBoardDTO BoardData { get; set; }
-        public string StartPlayerConnectionId { get; set; }
+        public int StartPlayerUserId { get; set; }
     }
 
     public class RollDiceMessage
@@ -45,7 +45,7 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
 
     public class PlaceWhiteConeResponseMessage
     {
-        public string PlayerConnectionId { get; set; }
+        public int UserId { get; set; }
         public int DiceIndex1 { get; set; }
         public int DiceIndex2 { get; set; }
         public SortedDictionary<int, int> UpdatedColumns { get; set; }
@@ -53,20 +53,20 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
 
     public class PlayRoundResponseMessage
     {
-        public string PlayerConnectionId { get; set; }
+        public int UserId { get; set; }
         public int DiceIndex1 { get; set; }
         public int DiceIndex2 { get; set; }
         public SortedDictionary<int, int> UpdatedColumns { get; set; }
-        public string NextPlayerConnectionId { get; set; }
+        public int NextPlayerUserId { get; set; }
         public int FinalScore { get; set; }
         public HashSet<int> FinishedColumns { get; set; }
-        public SortedDictionary<int, int> playerCones { get; set; }
+        public SortedDictionary<int, int> PlayerCones { get; set; }
     }
 
     public class EndRoundResponseMessage
     {
-        public string PlayerConnectionId { get; set; }
-        public string NextPlayerConnectionId { get; set; }
+        public int UserId { get; set; }
+        public int NextPlayerUserId { get; set; }
     }
 
     public class GameFinishedResponseMessage

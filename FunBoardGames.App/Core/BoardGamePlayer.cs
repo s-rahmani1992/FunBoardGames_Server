@@ -1,22 +1,17 @@
-﻿namespace FunBoardGames.App.Core
+﻿using FunBoardGames.Database.Entities;
+
+namespace FunBoardGames.App.Core
 {
     public class BoardGamePlayer
     {
-        public BoardGamePlayer(string name, string connectionId)
+        public BoardGamePlayer(Profile  profile)
         {
-            Name = name;
-            ConnectionId = connectionId;
+            Profile = profile;
         }
 
-        public string Name { get; protected set; }
-        public string ConnectionId { get; protected set; }
-        public bool IsReady { get; protected set; } = false;
+        public Profile Profile { get; protected set; }
+
         public bool IsGameLoaded { get; protected set; } = false;
-
-        public void SetReady(bool ready)
-        {
-            IsReady = ready;
-        }
 
         public void SetGameLoaded()
         {

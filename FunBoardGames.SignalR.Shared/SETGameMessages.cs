@@ -35,7 +35,7 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
 
     public class  SETPlayerResultDTO
     {
-        public string ConnectionId { get; set; }
+        public int UserId { get; set; }
         public int Corrects { get; set; }
         public int Wrongs { get; set; }
         public bool IsBusted { get; set; }
@@ -49,7 +49,7 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
 
     public class PlayerGuessStartMessage
     {
-        public string ConnectionId { get; set; }
+        public int UserId { get; set; }
         public DateTimeOffset GuessStartTime { get; set; }
     }
 
@@ -60,7 +60,7 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
 
     public class GuessResultResponse
     {
-        public string ConnectionId { get; set; }
+        public int UserId { get; set; }
         public bool GuessedCorrect { get; set; }
         public int CorrectScore { get; set; }
         public int WrongScore { get; set; }
@@ -87,7 +87,7 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
 
     public class PlayerUsedHintMessage
     {
-        public string ConnectionId { get; set; }
+        public int UserId { get; set; }
         public int UsedHints { get; set; }
     }
 }

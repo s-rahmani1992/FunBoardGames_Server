@@ -1,4 +1,5 @@
 using FunBoardGames.App.Core;
+using FunBoardGames.Database.Entities;
 using System.Collections.Concurrent;
 
 namespace FunBoardGames.App.Lobby
@@ -16,12 +17,12 @@ namespace FunBoardGames.App.Lobby
             this.createGame = createGame;
         }
 
-        protected T Join(string connectionId, string playerName)
+        protected T Join(Profile profile)
         {
             lock (matchLock)
             {
                 T game = FindOpenGame() ?? CreateGame();
-                game.AddPlayer(connectionId, playerName);
+                game.AddPlayer(profile);
                 return game;
             }
         }
@@ -45,9 +46,9 @@ namespace FunBoardGames.App.Lobby
             return games.Values.FirstOrDefault(game => game.IsOpen);
         }
 
-        public override GameController JoinGame(string connectionId, string playerName)
+        public override GameController JoinGame(Profile profile)
         {
-            return Join(connectionId, playerName);
+            return Join(profile);
         }
 
         public override void RemoveGame(GameController gameController)

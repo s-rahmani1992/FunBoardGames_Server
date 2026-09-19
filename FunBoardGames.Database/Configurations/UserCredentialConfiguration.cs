@@ -11,7 +11,6 @@ namespace FunBoardGames.Database.Configurations
             userCredentialBuilder.ToTable("User_Credentials");
             userCredentialBuilder.HasKey(credential => credential.Id);
             userCredentialBuilder.Property(credential => credential.Id).HasColumnName("id");
-            userCredentialBuilder.Property(credential => credential.Name).HasColumnName("name").IsRequired();
             userCredentialBuilder.Property(credential => credential.AuthTokenHash).HasColumnName("auth_token_hash").IsRequired();
             userCredentialBuilder.Property(credential => credential.DeviceId).HasColumnName("device_id").IsRequired();
             userCredentialBuilder.Property(credential => credential.JoinedAt).HasColumnName("joined_at").HasDefaultValueSql("CURRENT_TIMESTAMP").IsRequired();

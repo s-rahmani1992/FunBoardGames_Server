@@ -14,28 +14,14 @@ namespace FunBoardGames.App.CantStopGame
 
         int[] diceValues = new int[4];
 
-        public CantStopGameController(uint id, CantStopGameData entity) : base(id, entity, (name, connectionId) => new CantStopGamePlayer(name, connectionId))
+        public CantStopGameController(uint id, CantStopGameData entity) : base(id, entity, (profile) => new CantStopGamePlayer(profile))
         {
             GroupKey = "Cant_Stop_" + RoomId;
         }
 
-        public override int RequiredPlayerCount => 2;
-
-        public override RoomInfoDTO GetInfo()
+        public int GetCurrentPlayerConnectionId()
         {
-            return new RoomInfoDTO()
-            {
-                GameType = BoardGameType.CantStop,
-                Id = RoomId,
-                MaxPlayers = RequiredPlayerCount,
-                PlayerCount = PlayerCount,
-                Name = RoomName,
-            };
-        }
-
-        public string GetCurrentPlayerConnectionId()
-        {
-            return players[currentPlayerIndex].ConnectionId;
+            return players[currentPlayerIndex].Profile.UserId;
         }
 
         public CantStopBoardDTO GetBoardData()
@@ -141,7 +127,7 @@ namespace FunBoardGames.App.CantStopGame
             return (whiteConePos + 1, newCone);
         }
 
-        public string UpdatePlayerCone()
+        public int UpdatePlayerCone()
         {
             var player = players[currentPlayerIndex];
             foreach (var whiteCone in whiteConePositions)
@@ -159,7 +145,7 @@ namespace FunBoardGames.App.CantStopGame
 
             whiteConePositions.Clear();
             currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
-            return players[currentPlayerIndex].ConnectionId;
+            return players[currentPlayerIndex].Profile.UserId;
         }
 
         public bool IsBusted()
@@ -194,16 +180,16 @@ namespace FunBoardGames.App.CantStopGame
             return true;
         }
 
-        public string EndRound()
+        public int EndRound()
         {
             whiteConePositions.Clear();
             currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
-            return players[currentPlayerIndex].ConnectionId;
+            return players[currentPlayerIndex].Profile.UserId;
         }
 
-        public CantStopGamePlayer GetPlayerByConnectionId(string connectionId)
+        public CantStopGamePlayer GetPlayerByConnectionId(int userId)
         {
-            return players.FirstOrDefault(player => player.ConnectionId == connectionId);
+            return players.FirstOrDefault(player => player.Profile.UserId == userId);
         }
 
         public bool IsFinished()
@@ -215,7 +201,7 @@ namespace FunBoardGames.App.CantStopGame
         {
             return players.OrderByDescending(player => player.Score).Select(player => new PlayerScoreDTO
             {
-                PlayerConnectionId = player.ConnectionId,
+                UserId = player.Profile.UserId,
                 Score = player.Score,
             }).ToList();
         }

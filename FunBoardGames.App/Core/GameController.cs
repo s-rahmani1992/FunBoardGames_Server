@@ -1,4 +1,5 @@
 
+using FunBoardGames.Database.Entities;
 using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.Core
@@ -11,25 +12,18 @@ namespace FunBoardGames.App.Core
         }
 
         public abstract int PlayerCount { get; }
-        public abstract int RequiredPlayerCount { get; }
         public abstract uint GameId {  get; }
+        public abstract bool IsOpen { get; }
 
-        public abstract bool AddPlayer(string connectionId, string playerName);
-        public abstract bool RemovePlayer(string connectionId);
-        public abstract void SetPlayerReady(string connectionId);
-        public abstract bool SetPlayerLoaded(string connectionId);
+
+        public abstract bool AddPlayer(Profile profile);
+        public abstract bool RemovePlayer(int UserId);
+        public abstract bool SetPlayerLoaded(int UserId);
         public abstract IEnumerable<PlayerInfoDTO> GetPlayers();
-        public abstract RoomInfoDTO GetInfo();
 
-        /// <summary>
-        /// Called once the room is removed from matchmaking, to release anything still running for it.
-        /// </summary>
         public virtual void OnRemoved() { }
 
         public uint RoomId { get; private set; }
-        public string RoomName { get; private set; } = string.Empty;
         public string GroupKey { get; protected set; }
-
-        public bool IsOpen => PlayerCount < RequiredPlayerCount;
     }
 }

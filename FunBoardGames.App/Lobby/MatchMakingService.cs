@@ -23,11 +23,11 @@ namespace FunBoardGames.App.Lobby
         readonly IHubContext<GameHub> _hubContext;
         readonly ConcurrentDictionary<uint, GameMatchMaker> _activeMatchMakers = new();
 
-        public async Task<GameController> JoinGame(uint gameId, string connectionId, string playerName)
+        public async Task<GameController> JoinGame(uint gameId, Profile profile)
         {
             if (_activeMatchMakers.TryGetValue(gameId, out var matchMaker))
             {
-                return matchMaker.JoinGame(connectionId, playerName);
+                return matchMaker.JoinGame(profile);
             }
 
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
@@ -44,7 +44,7 @@ namespace FunBoardGames.App.Lobby
                 return null;
 
             newMatchMaker = _activeMatchMakers.GetOrAdd(gameId, newMatchMaker);
-            return newMatchMaker.JoinGame(connectionId, playerName);
+            return newMatchMaker.JoinGame(profile);
         }
 
         public void RemoveGame(GameController gameController)

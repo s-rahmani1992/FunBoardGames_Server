@@ -1,10 +1,11 @@
 ﻿using FunBoardGames.App.Core;
+using FunBoardGames.Database.Entities;
 
 namespace FunBoardGames.App.SETGame
 {
     public class SETGamePlayer : BoardGamePlayer
     {
-        public SETGamePlayer(string name, string connectionId) : base(name, connectionId)
+        public SETGamePlayer(Profile profile) : base(profile)
         {
         }
 

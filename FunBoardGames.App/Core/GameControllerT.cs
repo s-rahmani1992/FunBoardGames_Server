@@ -8,9 +8,9 @@ namespace FunBoardGames.App.Core
     {
         protected readonly List<TPlayer> players = [];
         protected readonly TGame game;
-        readonly Func<string, string, TPlayer> createPlayer;
+        readonly Func<Profile, TPlayer> createPlayer;
 
-        protected GameControllerT(uint id, TGame game, Func<string, string, TPlayer> createPlayer) : base(id)
+        protected GameControllerT(uint id, TGame game, Func<Profile, TPlayer> createPlayer) : base(id)
         {
             this.game = game;
             this.createPlayer = createPlayer;
@@ -18,20 +18,20 @@ namespace FunBoardGames.App.Core
 
         public override uint GameId => game.Id;
         public override int PlayerCount => players.Count;
-        public override int RequiredPlayerCount => (int)game.PlayerCount;
+        public override bool IsOpen => players.Count < (int)game.PlayerCount;
 
-        public override bool AddPlayer(string connectionId, string playerName)
+        public override bool AddPlayer(Profile profile)
         {
-            if(players.Exists(p => p.ConnectionId == connectionId))
+            if(players.Exists(p => p.Profile.UserId == profile.UserId))
                 return false;
 
-            players.Add(createPlayer(playerName, connectionId));
+            players.Add(createPlayer(profile));
             return true;
         }
 
-        public override bool RemovePlayer(string connectionId)
+        public override bool RemovePlayer(int userId)
         {
-            var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+            var player = players.FirstOrDefault(player => player.Profile.UserId == userId);
             return players.Remove(player);
         }
 
@@ -39,24 +39,13 @@ namespace FunBoardGames.App.Core
         {
             return players.Select(player => new PlayerInfoDTO
             {
-                UserProfile = new UserProfileDTO
-                {
-                    PlayerName = player.Name,
-                    ConnectionId = player.ConnectionId,
-                },
-                IsReady = player.IsReady,
+                UserProfile = player.Profile.ToDTO(),
             });
         }
 
-        public override void SetPlayerReady(string connectionId)
+        public override bool SetPlayerLoaded(int userId)
         {
-            var p = players.FirstOrDefault(player => player.ConnectionId == connectionId);
-            p?.SetReady(true);
-        }
-
-        public override bool SetPlayerLoaded(string connectionId)
-        {
-            var player = players.FirstOrDefault(p => p.ConnectionId == connectionId);
+            var player = players.FirstOrDefault(p => p.Profile.UserId == userId);
             player.SetGameLoaded();
 
             return players.All(player => player.IsGameLoaded);

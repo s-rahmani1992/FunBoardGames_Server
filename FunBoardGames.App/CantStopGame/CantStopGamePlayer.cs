@@ -1,10 +1,11 @@
 ﻿using FunBoardGames.App.Core;
+using FunBoardGames.Database.Entities;
 
 namespace FunBoardGames.App.CantStopGame
 {
     public class CantStopGamePlayer : BoardGamePlayer
     {
-        public CantStopGamePlayer(string name, string connectionId) : base(name, connectionId)
+        public CantStopGamePlayer(Profile profile) : base(profile)
         {
         }
 

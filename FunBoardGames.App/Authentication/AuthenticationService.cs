@@ -25,31 +25,17 @@ namespace FunBoardGames.App.Authentication
 
             var authToken = GenerateAuthToken();
 
-            var userCredentials = new UserCredentials
-            {
-                Name = request.PlayerName,
-                AuthTokenHash = HashToken(authToken),
-                DeviceId = request.DeviceId,
-                JoinedAt = DateTimeOffset.UtcNow,
-                LastLoginAt = DateTimeOffset.UtcNow,
-            };
-
             using var _dbContext = await _dbContextFactory.CreateDbContextAsync();
 
-            var errorCode = await _dbContext.AddNewUser(userCredentials.Name, userCredentials.DeviceId, userCredentials.AuthTokenHash);
-            if (errorCode != AuthenticationErrorCode.None)
+            var (errorCode, profile) = await _dbContext.AddNewUser(request.PlayerName, request.DeviceId, HashToken(authToken));
+            if (errorCode != AuthenticationErrorCode.None || profile == null)
             {
                 return CreateErrorResponse(errorCode);
             }
 
             return new AuthenticationResponseMessage
             {
-                ProfileDTO = new UserProfileDTO
-                {
-                    UserId = userCredentials.Id,
-                    PlayerName = userCredentials.Name,
-                    ConnectionId = string.Empty // This can be set later when the user connects
-                },
+                ProfileDTO = ToProfileDTO(profile),
                 AuthToken = authToken,
                 ErrorCode = AuthenticationErrorCode.None,
             };
@@ -57,7 +43,7 @@ namespace FunBoardGames.App.Authentication
 
         public async Task<AuthenticationResponseMessage> SignIn(SignInRequestMessage request)
         {
-            if (string.IsNullOrWhiteSpace(request.PlayerName) ||
+            if (request.UserId <= 0 ||
                 string.IsNullOrWhiteSpace(request.DeviceId) ||
                 string.IsNullOrWhiteSpace(request.AuthToken))
             {
@@ -66,7 +52,7 @@ namespace FunBoardGames.App.Authentication
 
             using var _dbContext = await _dbContextFactory.CreateDbContextAsync();
 
-            var userCredentials = await _dbContext.GetUserCredentials(request.PlayerName, request.DeviceId);
+            var userCredentials = await _dbContext.GetUserCredentials(request.UserId, request.DeviceId);
 
             if (userCredentials == null)
             {
@@ -78,19 +64,31 @@ namespace FunBoardGames.App.Authentication
                 return CreateErrorResponse(AuthenticationErrorCode.InvalidCredentials);
             }
 
+            var profile = await _dbContext.GetProfile(userCredentials.Id);
+
+            if (profile == null)
+            {
+                return CreateErrorResponse(AuthenticationErrorCode.UserNotFound);
+            }
+
             userCredentials.LastLoginAt = DateTimeOffset.UtcNow;
             await _dbContext.SaveChangesAsync();
 
             return new AuthenticationResponseMessage
             {
-                ProfileDTO = new UserProfileDTO
-                {
-                    UserId = userCredentials.Id,
-                    PlayerName = userCredentials.Name,
-                    ConnectionId = string.Empty // This can be set later when the user connects
-                },
+                ProfileDTO = ToProfileDTO(profile),
                 AuthToken = request.AuthToken,
                 ErrorCode = AuthenticationErrorCode.None,
+            };
+        }
+
+        private static UserProfileDTO ToProfileDTO(Profile profile)
+        {
+            return new UserProfileDTO
+            {
+                UserId = profile.UserId,
+                PlayerName = profile.PlayerName,
+                Avatar = profile.Avatar,
             };
         }
 

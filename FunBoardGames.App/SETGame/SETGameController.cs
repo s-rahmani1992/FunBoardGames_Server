@@ -1,6 +1,5 @@
 ﻿using FunBoardGames.App.Core;
 using FunBoardGames.Database.Entities;
-using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.SET;
 using Microsoft.AspNetCore.SignalR;
 
@@ -21,7 +20,7 @@ namespace FunBoardGames.App.SETGame
 
         CancellationTokenSource? roundCancelTokenSource;
         CancellationTokenSource? guessCancelTokenSource;
-        string? guessingConnectionId;
+        int? guessingUserId;
         bool isRoundTimeoutPending;
         bool isFinished;
         int roundNumber;
@@ -41,7 +40,7 @@ namespace FunBoardGames.App.SETGame
             {
                 results.Add(new SETPlayerResultDTO
                 {
-                    ConnectionId = player.ConnectionId,
+                    UserId = player.Profile.UserId,
                     Corrects = player.CorrectScore,
                     Wrongs = player.WrongScore,
                     IsBusted = player.IsBusted,
@@ -53,7 +52,7 @@ namespace FunBoardGames.App.SETGame
         }
 
         public SETGameController(uint id, SETGameData entity, IHubContext<GameHub> hubContext, Action<GameController> onGameFinished)
-            : base(id, entity, (name, connectionId) => new SETGamePlayer(name, connectionId))
+            : base(id, entity, (profile) => new SETGamePlayer(profile))
         {
             GroupKey = "SET_" + RoomId;
             this.hubContext = hubContext;
@@ -66,19 +65,7 @@ namespace FunBoardGames.App.SETGame
                 FinishGame();
         }
 
-        public override RoomInfoDTO GetInfo()
-        {
-            return new RoomInfoDTO
-            {
-                GameType = BoardGameType.SET,
-                Id = RoomId,
-                MaxPlayers = RequiredPlayerCount,
-                PlayerCount = players.Count(),
-                Name = RoomName,
-            };
-        }
-
-        internal GameBeginMessage PrepareGame()
+        public GameBeginMessage PrepareGame()
         {
             lock (stateLock)
             {
@@ -162,10 +149,6 @@ namespace FunBoardGames.App.SETGame
 
         #region Round Timer
 
-        /// <summary>
-        /// Starts a new round, replacing any running round timer, and returns the round start time.
-        /// Stores a SET on the table for card hints. Must be called while holding <see cref="stateLock"/>.
-        /// </summary>
         DateTimeOffset StartRoundTimer()
         {
             var roundStartTime = DateTimeOffset.UtcNow;
@@ -198,7 +181,7 @@ namespace FunBoardGames.App.SETGame
                     return;
 
                 // A player is guessing, so the timeout waits until the guess is resolved
-                if (guessingConnectionId != null)
+                if (guessingUserId != null)
                 {
                     isRoundTimeoutPending = true;
                     return;
@@ -210,9 +193,6 @@ namespace FunBoardGames.App.SETGame
             await SendRoundTimeout(timeoutMessage);
         }
 
-        /// <summary>
-        /// Replaces a SET on the table with new cards and starts the next round. Must be called while holding <see cref="stateLock"/>.
-        /// </summary>
         RoundTimeoutMessage TimeoutRound()
         {
             var removedCards = SETGameUtilities.GetAvailableSET(placedCards).ToList();
@@ -240,14 +220,11 @@ namespace FunBoardGames.App.SETGame
                 onGameFinished(this);
         }
 
-        /// <summary>
-        /// Stops every timer and returns the final results. Must be called while holding <see cref="stateLock"/>.
-        /// </summary>
         List<SETPlayerResultDTO> FinishGame()
         {
             isFinished = true;
             isRoundTimeoutPending = false;
-            guessingConnectionId = null;
+            guessingUserId = null;
             roundCancelTokenSource?.Cancel();
             guessCancelTokenSource?.Cancel();
             return GetFinalResults();
@@ -255,21 +232,18 @@ namespace FunBoardGames.App.SETGame
 
         #endregion
 
-        /// <summary>
-        /// Starts a guess for the player, or returns null when the game is over or another player is already guessing.
-        /// </summary>
-        internal DateTimeOffset? StartGuessProcess(string connectionId)
+        public DateTimeOffset? StartGuessProcess(int userId)
         {
             lock (stateLock)
             {
-                if (isFinished || guessingConnectionId != null)
+                if (isFinished || guessingUserId != null)
                     return null;
 
-                var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+                var player = players.FirstOrDefault(player => player.Profile.UserId == userId);
                 if (player == null || player.IsBusted)
                     return null;
 
-                guessingConnectionId = connectionId;
+                guessingUserId = userId;
                 guessCancelTokenSource = new CancellationTokenSource();
 
                 var token = guessCancelTokenSource.Token;
@@ -296,8 +270,8 @@ namespace FunBoardGames.App.SETGame
                 if (token.IsCancellationRequested)
                     return;
 
-                var player = players.FirstOrDefault(player => player.ConnectionId == guessingConnectionId);
-                guessingConnectionId = null;
+                var player = players.FirstOrDefault(player => player.Profile.UserId == guessingUserId);
+                guessingUserId = null;
 
                 if (player != null)
                 {
@@ -324,22 +298,17 @@ namespace FunBoardGames.App.SETGame
                 await SendRoundTimeout(timeoutMessage);
         }
 
-        /// <summary>
-        /// Resolves the guess of the guessing player, or returns null when the player is not the one guessing.
-        /// If the round timed out during a wrong guess, <paramref name="timeoutMessage"/> holds the delayed round timeout.
-        /// </summary>
-        internal GuessResultResponse? ProcessGuess(string connectionId, List<SETCardDTO> guessCards, out RoundTimeoutMessage? timeoutMessage)
+        public GuessResultResponse? ProcessGuess(int userId, List<SETCardDTO> guessCards, out RoundTimeoutMessage? timeoutMessage)
         {
             timeoutMessage = null;
             lock (stateLock)
             {
-                if (guessingConnectionId != connectionId)
+                if (guessingUserId != userId)
                     return null;
 
                 guessCancelTokenSource?.Cancel();
-                guessingConnectionId = null;
-
-                var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+                guessingUserId = null;
+                var player = players.FirstOrDefault(player => player.Profile.UserId == userId);
                 bool isCorrect = SETGameUtilities.IsSET(guessCards[0], guessCards[1], guessCards[2]);
                 if (isCorrect)
                 {
@@ -389,7 +358,7 @@ namespace FunBoardGames.App.SETGame
         {
             return new GuessResultResponse
             {
-                ConnectionId = player.ConnectionId,
+                UserId = player.Profile.UserId,
                 GuessedCorrect = isCorrect,
                 WrongScore = player.WrongScore,
                 CorrectScore = player.CorrectScore,
@@ -398,20 +367,16 @@ namespace FunBoardGames.App.SETGame
             };
         }
 
-        internal bool CheckAnySETOnTable() => SETGameUtilities.GetAvailableSET(placedCards).Any();
+        private bool CheckAnySETOnTable() => SETGameUtilities.GetAvailableSET(placedCards).Any();
 
-        /// <summary>
-        /// Uses a card hint power up of the player and returns the first card of the round's SET, or returns null
-        /// when another player is guessing, the player already used a hint this round or reached the game's hint limit.
-        /// </summary>
-        internal CardHintResponse? UseCardHint(string connectionId)
+        public CardHintResponse? UseCardHint(int userId)
         {
             lock (stateLock)
             {
-                if (isFinished || guessingConnectionId != null || hintCards.Count == 0)
+                if (isFinished || guessingUserId != null || hintCards.Count == 0)
                     return null;
 
-                var player = players.FirstOrDefault(player => player.ConnectionId == connectionId);
+                var player = players.FirstOrDefault(player => player.Profile.UserId == userId);
                 if (player == null || player.IsBusted || player.LastHintRound == roundNumber)
                     return null;
 
