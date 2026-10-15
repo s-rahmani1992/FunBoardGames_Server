@@ -8,6 +8,8 @@ namespace FunBoardGames.SignalR.Shared
     public static class UserMessageNames
     {
         public const string GetUserData = "GetUserData";
+        public const string ChangePlayerName = "ChangePlayerName";
+        public const string ProfileUpdate = "ProfileUpdate";
     }
 
     [JsonConverter(typeof(GameDTOConverter))]

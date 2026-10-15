@@ -44,6 +44,17 @@ namespace FunBoardGames.Database
             return await Profiles.FirstOrDefaultAsync(p => p.UserId == userId);
         }
 
+        public async Task<Profile?> UpdatePlayerName(int userId, string playerName)
+        {
+            var profile = await Profiles.FirstOrDefaultAsync(p => p.UserId == userId);
+            if (profile == null)
+                return null;
+
+            profile.PlayerName = playerName;
+            await SaveChangesAsync();
+            return profile;
+        }
+
         public async Task<(AuthenticationErrorCode ErrorCode, Profile? Profile)> AddNewUser(string playerName, string deviceId, string authTokenHash)
         {
             // The profile's foreign key needs the user id the database generates, so the two rows are
