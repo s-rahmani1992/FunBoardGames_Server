@@ -9,6 +9,7 @@ namespace FunBoardGames.SignalR.Shared
     {
         public const string GetUserData = "GetUserData";
         public const string ChangePlayerName = "ChangePlayerName";
+        public const string ChangePlayerAvatar = "ChangePlayerAvatar";
         public const string ProfileUpdate = "ProfileUpdate";
     }
 

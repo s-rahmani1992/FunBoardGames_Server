@@ -28,5 +28,23 @@ namespace FunBoardGames.App
             Context.Items[ContextNames.Profile] = new Profile(updatedProfile);
             await Clients.Caller.SendAsync(UserMessageNames.ProfileUpdate, updatedProfile.ToDTO());
         }
+
+        [HubMethodName(UserMessageNames.ChangePlayerAvatar)]
+        public async Task ChangePlayerAvatarRequest(int newAvatar)
+        {
+            if (Context.Items[ContextNames.Profile] is not Profile currentProfile)
+            {
+                return;
+            }
+            var dbContextFactory = _provider.GetRequiredService<IDbContextFactory<FunBoardGamesDbContext>>();
+            using var dbContext = await dbContextFactory.CreateDbContextAsync();
+            var updatedProfile = await dbContext.UpdatePlayerAvatar(currentProfile.UserId, newAvatar);
+            if (updatedProfile == null)
+            {
+                return;
+            }
+            Context.Items[ContextNames.Profile] = new Profile(updatedProfile);
+            await Clients.Caller.SendAsync(UserMessageNames.ProfileUpdate, updatedProfile.ToDTO());
+        }
     }
 }
