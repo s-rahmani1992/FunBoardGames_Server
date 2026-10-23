@@ -24,6 +24,7 @@ namespace FunBoardGames.SignalR.Shared
 
     public class SETGameDTO : GameDTO
     {
+        public int BeginCardCount { get; set; }
         public float GuessTime { get; set; }
         public int RoundTime { get; set; }
         public int WrongLimit { get; set; }

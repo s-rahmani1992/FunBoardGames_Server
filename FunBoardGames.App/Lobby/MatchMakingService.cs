@@ -84,6 +84,7 @@ namespace FunBoardGames.App.Lobby
                 Id = setGame.Id,
                 Name = setGame.Name,
                 GameType = BoardGameType.SET,
+                BeginCardCount = setGame.VisibleCardCount,
                 PlayerCount = setGame.PlayerCount,
                 GuessTime = setGame.PlayerCount,
                 RoundTime = setGame.RoundTime,
