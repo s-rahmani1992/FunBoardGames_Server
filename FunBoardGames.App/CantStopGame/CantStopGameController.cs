@@ -77,7 +77,9 @@ namespace FunBoardGames.App.CantStopGame
 
             if (mustSelectMoves)
             {
-                if (possibleMoves[request.Selectedcolumn.Value] != null)
+                if (request.Selectedcolumn.HasValue
+                    && possibleMoves.TryGetValue(request.Selectedcolumn.Value, out var selectedMove)
+                    && selectedMove != null)
                 {
                     whiteConePositions[request.Selectedcolumn.Value] = possibleMoves[request.Selectedcolumn.Value].Value.pos;
                     result[request.Selectedcolumn.Value] = possibleMoves[request.Selectedcolumn.Value].Value.pos;
@@ -102,7 +104,7 @@ namespace FunBoardGames.App.CantStopGame
 
         (int pos, int cone)? GetPosibleMove(int columnNumber, CantStopGamePlayer player)
         {
-            if (FinishedColumns.Contains(columnNumber))
+            if (!game.BoardData.ContainsKey(columnNumber) || FinishedColumns.Contains(columnNumber))
                 return null;
 
             int whiteConePos = -1;
@@ -194,7 +196,7 @@ namespace FunBoardGames.App.CantStopGame
 
         public bool IsFinished()
         {
-            return players.Any(player => player.Score >= 3);
+            return players.Any(player => player.Score >= game.WinConeCount);
         }
 
         public List<PlayerScoreDTO> GetPlayerScores()
