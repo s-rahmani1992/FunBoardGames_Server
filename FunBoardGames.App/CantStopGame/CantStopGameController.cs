@@ -73,7 +73,7 @@ namespace FunBoardGames.App.CantStopGame
 
             int newWhiteCones = (move1 != null ? move1.Value.cone : 0) + (move2 != null ? move2.Value.cone : 0);
 
-            bool mustSelectMoves = newWhiteCones + whiteConePositions.Count() > 3;
+            bool mustSelectMoves = newWhiteCones + whiteConePositions.Count() > game.MarkerConeCount;
 
             if (mustSelectMoves)
             {
@@ -110,7 +110,7 @@ namespace FunBoardGames.App.CantStopGame
 
             if (whiteConePositions.TryGetValue(columnNumber, out whiteConePos) == false) // new white cone required
             {
-                if (whiteConePositions.Count() >= 3) // Check if we run out of white cones
+                if (whiteConePositions.Count() >= game.MarkerConeCount) // Check if we run out of white cones
                     return null;
 
                 newCone = 1;

@@ -23,6 +23,11 @@ namespace FunBoardGames.Database.Configurations
                 (left, right) => (left ?? new()).SequenceEqual(right ?? new()),
                 dictionary => dictionary.Aggregate(0, (hash, pair) => HashCode.Combine(hash, pair.Key, pair.Value)),
                 dictionary => new Dictionary<int, int>(dictionary)));
+
+            builder.Property(e => e.MarkerConeCount).IsRequired(true).HasColumnName("marker_cone_count").HasDefaultValue(3);
+            builder.Property(e => e.WinConeCount).IsRequired(true).HasColumnName("win_cone_count").HasDefaultValue(3);
+            builder.Property(e => e.RoundTime).IsRequired(true).HasColumnName("round_time").HasDefaultValue(60);
+            builder.Property(e => e.TimeoutLimit).IsRequired(true).HasColumnName("timeout_limit").HasDefaultValue(3);
         }
     }
 }

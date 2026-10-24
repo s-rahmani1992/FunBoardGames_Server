@@ -151,6 +151,30 @@ namespace FunBoardGames.Database.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("board_data");
 
+                    b.Property<int>("MarkerConeCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(3)
+                        .HasColumnName("marker_cone_count");
+
+                    b.Property<int>("RoundTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(60)
+                        .HasColumnName("round_time");
+
+                    b.Property<int>("TimeoutLimit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(3)
+                        .HasColumnName("timeout_limit");
+
+                    b.Property<int>("WinConeCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(3)
+                        .HasColumnName("win_cone_count");
+
                     b.ToTable("CantStop_Games", (string)null);
                 });
 
