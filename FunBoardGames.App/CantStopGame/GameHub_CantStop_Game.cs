@@ -22,7 +22,7 @@ namespace FunBoardGames.App
                 await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.SendGameData, new GameDataMessage
                 {
                     BoardData = boardData,
-                    StartPlayerUserId = cantStopController.GetCurrentPlayerConnectionId(),
+                    StartPlayerUserId = cantStopController.GetCurrentPlayerId(),
                 });
             }
         }
@@ -33,7 +33,7 @@ namespace FunBoardGames.App
             CantStopGameController cantStopController = Context.Items[ContextNames.Room] as CantStopGameController;
             var profile = Context.Items[ContextNames.Profile] as Profile;
 
-            if (cantStopController.GetCurrentPlayerConnectionId() != profile.UserId)
+            if (cantStopController.GetCurrentPlayerId() != profile.UserId)
                 return;
 
             var diceValues = cantStopController.RollDice();
@@ -44,17 +44,18 @@ namespace FunBoardGames.App
             });
         }
 
-        [HubMethodName(CantStopGameMessageNames.PlaceWhiteCone)]
+        [HubMethodName(CantStopGameMessageNames.PlaceMarkerCone)]
         public async Task PlaceWhiteCone(PlaceWhiteConeRequestMessage placeConeMsg)
         {
             CantStopGameController cantStopController = Context.Items[ContextNames.Room] as CantStopGameController;
             var profile = Context.Items[ContextNames.Profile] as Profile;
-            if (cantStopController.GetCurrentPlayerConnectionId() != profile.UserId)
+            if (cantStopController.GetCurrentPlayerId() != profile.UserId)
                 return;
             var moveResult = cantStopController.PlaceWhiteCone(placeConeMsg);
+            var dices = cantStopController.RollDice();
             if (moveResult.Count() > 0)
             {
-                await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.PlaceWhiteCone, new PlaceWhiteConeResponseMessage
+                await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.PlaceMarkerCone, new PlaceWhiteConeResponseMessage
                 {
                     DiceIndex1 = placeConeMsg.DiceIndex1,
                     DiceIndex2 = placeConeMsg.DiceIndex2,
@@ -62,6 +63,12 @@ namespace FunBoardGames.App
                     UpdatedColumns = moveResult,
                 });
             }
+
+            await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.RollDice, new RollDiceMessage
+            {
+                diceValues = dices,
+                IsBusted = cantStopController.IsBusted(),
+            });
         }
 
         [HubMethodName(CantStopGameMessageNames.PlayRound)]
@@ -70,7 +77,7 @@ namespace FunBoardGames.App
             CantStopGameController cantStopController = Context.Items[ContextNames.Room] as CantStopGameController;
             var profile = Context.Items[ContextNames.Profile] as Profile;
 
-            if (cantStopController.GetCurrentPlayerConnectionId() != profile.UserId)
+            if (cantStopController.GetCurrentPlayerId() != profile.UserId)
                 return;
             var moveResult = cantStopController.PlaceWhiteCone(placeConeMsg);
             var nextId = cantStopController.UpdatePlayerCone();
@@ -105,7 +112,7 @@ namespace FunBoardGames.App
             CantStopGameController cantStopController = Context.Items[ContextNames.Room] as CantStopGameController;
             var profile = Context.Items[ContextNames.Profile] as Profile;
 
-            if (cantStopController.GetCurrentPlayerConnectionId() != profile.UserId)
+            if (cantStopController.GetCurrentPlayerId() != profile.UserId)
                 return;
 
             var nextId = cantStopController.EndRound();

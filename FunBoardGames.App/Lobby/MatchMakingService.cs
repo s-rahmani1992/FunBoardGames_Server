@@ -99,6 +99,10 @@ namespace FunBoardGames.App.Lobby
                 GameType = BoardGameType.CantStop,
                 PlayerCount = cantStopGame.PlayerCount,
                 BoardData = cantStopGame.BoardData,
+                MarkerConeCount = cantStopGame.MarkerConeCount,
+                WinConeCount = cantStopGame.WinConeCount,
+                RoundTime = cantStopGame.RoundTime,
+                TimeoutLimit = cantStopGame.TimeoutLimit,
             },
             _ => throw new NotSupportedException($"Unsupported game entity type: {entity.GetType()}"),
         };

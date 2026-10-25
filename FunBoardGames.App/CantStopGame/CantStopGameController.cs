@@ -19,7 +19,7 @@ namespace FunBoardGames.App.CantStopGame
             GroupKey = "Cant_Stop_" + RoomId;
         }
 
-        public int GetCurrentPlayerConnectionId()
+        public int GetCurrentPlayerId()
         {
             return players[currentPlayerIndex].Profile.UserId;
         }

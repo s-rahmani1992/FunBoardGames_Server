@@ -7,7 +7,7 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
         public const string GameLoaded = "CantStop_GameLoaded";
         public const string SendGameData = "CantStop_SendGameData";
         public const string RollDice = "CantStop_RollDice";
-        public const string PlaceWhiteCone = "CantStop_PlaceWhiteCone";
+        public const string PlaceMarkerCone = "CantStop_PlaceMarkerCone";
         public const string PlayRound = "CantStop_PlayRound";
         public const string EndRound = "CantStop_EndRound";
         public const string GameFinished = "CantStop_GameFinished";
