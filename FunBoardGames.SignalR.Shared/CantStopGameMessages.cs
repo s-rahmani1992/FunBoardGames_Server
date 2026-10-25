@@ -10,6 +10,7 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
         public const string PlaceMarkerCone = "CantStop_PlaceMarkerCone";
         public const string PlayRound = "CantStop_PlayRound";
         public const string EndRound = "CantStop_EndRound";
+        public const string ResetRound = "CantStop_ResetRound";
         public const string GameFinished = "CantStop_GameFinished";
     }
 

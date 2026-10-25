@@ -13,6 +13,7 @@ namespace FunBoardGames.App.CantStopGame
         public HashSet<int> FinishedColumns = new();
 
         int[] diceValues = new int[4];
+        bool resetRoundUsed = false;
 
         public CantStopGameController(uint id, CantStopGameData entity) : base(id, entity, (profile) => new CantStopGamePlayer(profile))
         {
@@ -146,6 +147,7 @@ namespace FunBoardGames.App.CantStopGame
             }
 
             whiteConePositions.Clear();
+            resetRoundUsed = false;
             currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
             return players[currentPlayerIndex].Profile.UserId;
         }
@@ -185,6 +187,7 @@ namespace FunBoardGames.App.CantStopGame
         public int EndRound()
         {
             whiteConePositions.Clear();
+            resetRoundUsed = false;
             currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
             return players[currentPlayerIndex].Profile.UserId;
         }
@@ -206,6 +209,16 @@ namespace FunBoardGames.App.CantStopGame
                 UserId = player.Profile.UserId,
                 Score = player.Score,
             }).ToList();
+        }
+
+        public bool ResetRound()
+        {
+            if(IsBusted() || resetRoundUsed)
+                return false;
+
+            resetRoundUsed = true;
+            whiteConePositions.Clear();
+            return true;
         }
     }
 }

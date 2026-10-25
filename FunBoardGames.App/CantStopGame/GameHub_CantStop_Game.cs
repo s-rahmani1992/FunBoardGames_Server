@@ -122,5 +122,18 @@ namespace FunBoardGames.App
                 NextPlayerUserId = nextId,
             });
         }
+
+        [HubMethodName(CantStopGameMessageNames.ResetRound)]
+        public async Task ResetRound()
+        {
+            CantStopGameController cantStopController = Context.Items[ContextNames.Room] as CantStopGameController;
+            var profile = Context.Items[ContextNames.Profile] as Profile;
+            if (cantStopController.GetCurrentPlayerId() != profile.UserId)
+                return;
+            bool success = cantStopController.ResetRound();
+
+            if (success)
+                await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.ResetRound);
+        }
     }
 }
