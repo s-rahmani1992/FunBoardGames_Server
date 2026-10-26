@@ -14,6 +14,7 @@ namespace FunBoardGames.App.CantStopGame
 
         int[] diceValues = new int[4];
         bool resetRoundUsed = false;
+        bool saveBustUsed = false;
 
         public CantStopGameController(uint id, CantStopGameData entity) : base(id, entity, (profile) => new CantStopGamePlayer(profile))
         {
@@ -146,6 +147,7 @@ namespace FunBoardGames.App.CantStopGame
                 }
             }
 
+            saveBustUsed = false;
             whiteConePositions.Clear();
             resetRoundUsed = false;
             currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
@@ -184,12 +186,39 @@ namespace FunBoardGames.App.CantStopGame
             return true;
         }
 
-        public int EndRound()
+        public EndRoundResponseMessage EndRound()
         {
-            whiteConePositions.Clear();
             resetRoundUsed = false;
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
-            return players[currentPlayerIndex].Profile.UserId;
+
+            if (IsBusted())
+            {
+                whiteConePositions.Clear();
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
+                return new EndRoundResponseMessage()
+                {
+                    IsBust = true,
+                    NextPlayerUserId = players[currentPlayerIndex].Profile.UserId,
+                };
+            }
+
+            if (saveBustUsed)
+            {
+                saveBustUsed = false;
+                var nextId = UpdatePlayerCone();
+                var player = players[currentPlayerIndex];
+                whiteConePositions.Clear();
+                return new EndRoundResponseMessage()
+                {
+                    IsBust = false,
+                    UpdatedColumns = whiteConePositions,
+                    NextPlayerUserId = nextId,
+                    FinalScore = player.Score,
+                    FinishedColumns = FinishedColumns,
+                    PlayerCones = player.ConePositions,
+                };
+            }
+
+            return null;
         }
 
         public CantStopGamePlayer GetPlayerByConnectionId(int userId)
@@ -218,6 +247,15 @@ namespace FunBoardGames.App.CantStopGame
 
             resetRoundUsed = true;
             whiteConePositions.Clear();
+            return true;
+        }
+
+        public bool SaveBust()
+        {
+            if (IsBusted() == false)
+                return false;
+
+            saveBustUsed = true;
             return true;
         }
     }

@@ -115,12 +115,8 @@ namespace FunBoardGames.App
             if (cantStopController.GetCurrentPlayerId() != profile.UserId)
                 return;
 
-            var nextId = cantStopController.EndRound();
-            await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.EndRound, new EndRoundResponseMessage
-            {
-                UserId = profile.UserId,
-                NextPlayerUserId = nextId,
-            });
+            var endResult = cantStopController.EndRound();endResult.UserId = profile.UserId;
+            await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.EndRound, endResult);
         }
 
         [HubMethodName(CantStopGameMessageNames.ResetRound)]
@@ -134,6 +130,20 @@ namespace FunBoardGames.App
 
             if (success)
                 await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.ResetRound);
+        }
+
+        [HubMethodName(CantStopGameMessageNames.BustSaver)]
+        public async Task BustSave()
+        {
+            CantStopGameController cantStopController = Context.Items[ContextNames.Room] as CantStopGameController;
+            var profile = Context.Items[ContextNames.Profile] as Profile;
+            if (cantStopController.GetCurrentPlayerId() != profile.UserId)
+                return;
+
+            var success = cantStopController.SaveBust();
+
+            if (success)
+                await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.BustSaver);
         }
     }
 }

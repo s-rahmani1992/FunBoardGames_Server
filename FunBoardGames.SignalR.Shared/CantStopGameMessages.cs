@@ -11,6 +11,7 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
         public const string PlayRound = "CantStop_PlayRound";
         public const string EndRound = "CantStop_EndRound";
         public const string ResetRound = "CantStop_ResetRound";
+        public const string BustSaver = "CantStop_BustSaver";
         public const string GameFinished = "CantStop_GameFinished";
     }
 
@@ -67,7 +68,12 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
     public class EndRoundResponseMessage
     {
         public int UserId { get; set; }
+        public bool IsBust { get; set; }
+        public SortedDictionary<int, int> UpdatedColumns { get; set; }
         public int NextPlayerUserId { get; set; }
+        public int FinalScore { get; set; }
+        public HashSet<int> FinishedColumns { get; set; }
+        public SortedDictionary<int, int> PlayerCones { get; set; }
     }
 
     public class GameFinishedResponseMessage
