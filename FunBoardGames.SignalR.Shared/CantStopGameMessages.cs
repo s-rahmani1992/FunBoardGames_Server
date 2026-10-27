@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace FunBoardGames.Network.SignalR.Shared.CantStop
 {
@@ -10,6 +11,7 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
         public const string PlaceMarkerCone = "CantStop_PlaceMarkerCone";
         public const string PlayRound = "CantStop_PlayRound";
         public const string EndRound = "CantStop_EndRound";
+        public const string Timeout = "CantStop_Timeout";
         public const string ResetRound = "CantStop_ResetRound";
         public const string BustSaver = "CantStop_BustSaver";
         public const string GameFinished = "CantStop_GameFinished";
@@ -28,14 +30,15 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
 
     public class GameDataMessage
     {
-        public CantStopBoardDTO BoardData { get; set; }
         public int StartPlayerUserId { get; set; }
+        public DateTimeOffset StartTime { get; set; }
     }
 
     public class RollDiceMessage
     {
         public int[] diceValues { get; set; }
         public bool IsBusted { get; set; }
+        public DateTimeOffset StartTime { get; set; }
     }
 
     public class PlaceWhiteConeRequestMessage
@@ -63,6 +66,7 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
         public int FinalScore { get; set; }
         public HashSet<int> FinishedColumns { get; set; }
         public SortedDictionary<int, int> PlayerCones { get; set; }
+        public DateTimeOffset StartTime { get; set; }
     }
 
     public class EndRoundResponseMessage
@@ -74,6 +78,14 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
         public int FinalScore { get; set; }
         public HashSet<int> FinishedColumns { get; set; }
         public SortedDictionary<int, int> PlayerCones { get; set; }
+        public DateTimeOffset StartTime { get; set; }
+    }
+
+    public class TimeoutMessage
+    {
+        public int UserId { get; set; }
+        public int NextUserId { get; set; }
+        public DateTimeOffset RoundStartTime { get; set; }
     }
 
     public class GameFinishedResponseMessage

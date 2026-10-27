@@ -18,11 +18,10 @@ namespace FunBoardGames.App
 
             if (allPlayersLoaded)
             {
-                var boardData = cantStopController.GetBoardData();
                 await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.SendGameData, new GameDataMessage
                 {
-                    BoardData = boardData,
                     StartPlayerUserId = cantStopController.GetCurrentPlayerId(),
+                    StartTime = cantStopController.StartRound(),
                 });
             }
         }
@@ -41,6 +40,7 @@ namespace FunBoardGames.App
             {
                 diceValues = diceValues,
                 IsBusted = cantStopController.IsBusted(),
+                StartTime = cantStopController.StartRound(),
             });
         }
 
@@ -68,6 +68,7 @@ namespace FunBoardGames.App
             {
                 diceValues = dices,
                 IsBusted = cantStopController.IsBusted(),
+                StartTime = cantStopController.StartRound(),
             });
         }
 
@@ -92,6 +93,7 @@ namespace FunBoardGames.App
                 FinalScore = player.Score,
                 FinishedColumns = cantStopController.FinishedColumns,
                 PlayerCones = player.ConePositions,
+                StartTime = cantStopController.StartRound(),
             });
 
             if (cantStopController.IsFinished())
@@ -115,7 +117,8 @@ namespace FunBoardGames.App
             if (cantStopController.GetCurrentPlayerId() != profile.UserId)
                 return;
 
-            var endResult = cantStopController.EndRound();endResult.UserId = profile.UserId;
+            var endResult = cantStopController.EndRound();
+            endResult.UserId = profile.UserId;
             await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.EndRound, endResult);
         }
 

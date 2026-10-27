@@ -1,8 +1,8 @@
 ﻿
 using FunBoardGames.App.Core;
 using FunBoardGames.Database.Entities;
-using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.CantStop;
+using Microsoft.AspNetCore.SignalR;
 
 namespace FunBoardGames.App.CantStopGame
 {
@@ -15,10 +15,13 @@ namespace FunBoardGames.App.CantStopGame
         int[] diceValues = new int[4];
         bool resetRoundUsed = false;
         bool saveBustUsed = false;
+        readonly IHubContext<GameHub> hubContext;
+        CancellationTokenSource? roundCancelTokenSource;
 
-        public CantStopGameController(uint id, CantStopGameData entity) : base(id, entity, (profile) => new CantStopGamePlayer(profile))
+        public CantStopGameController(uint id, CantStopGameData entity, IHubContext<GameHub> hub) : base(id, entity, (profile) => new CantStopGamePlayer(profile))
         {
             GroupKey = "Cant_Stop_" + RoomId;
+            hubContext = hub;
         }
 
         public int GetCurrentPlayerId()
@@ -26,12 +29,9 @@ namespace FunBoardGames.App.CantStopGame
             return players[currentPlayerIndex].Profile.UserId;
         }
 
-        public CantStopBoardDTO GetBoardData()
+        public DateTimeOffset StartRound()
         {
-            return new CantStopBoardDTO()
-            {
-                Columns = game.BoardData,
-            };
+            return StartRoundTimer();
         }
 
         public int[] RollDice()
@@ -198,6 +198,7 @@ namespace FunBoardGames.App.CantStopGame
                 {
                     IsBust = true,
                     NextPlayerUserId = players[currentPlayerIndex].Profile.UserId,
+                    StartTime = StartRoundTimer(),
                 };
             }
 
@@ -215,6 +216,7 @@ namespace FunBoardGames.App.CantStopGame
                     FinalScore = player.Score,
                     FinishedColumns = FinishedColumns,
                     PlayerCones = player.ConePositions,
+                    StartTime = StartRoundTimer(),
                 };
             }
 
@@ -257,6 +259,43 @@ namespace FunBoardGames.App.CantStopGame
 
             saveBustUsed = true;
             return true;
+        }
+
+        DateTimeOffset StartRoundTimer()
+        {
+            var roundStartTime = DateTimeOffset.UtcNow;
+            roundCancelTokenSource?.Cancel();
+            roundCancelTokenSource = new CancellationTokenSource();
+
+            var token = roundCancelTokenSource.Token;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(game.RoundTime), token);
+                    await OnRoundTimerEnded(token);
+                }
+                catch (OperationCanceledException) { }
+            });
+
+            return roundStartTime;
+        }
+
+        private async Task OnRoundTimerEnded(CancellationToken token)
+        {
+            if (token.IsCancellationRequested)
+                return;
+
+            whiteConePositions.Clear();
+            var currentId = players[currentPlayerIndex].Profile.UserId;
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
+            var newStartTime = StartRoundTimer();
+
+            await hubContext.Clients.Group(GroupKey).SendAsync(CantStopGameMessageNames.Timeout, new TimeoutMessage(){
+                UserId = currentId,
+                NextUserId = players[currentPlayerIndex].Profile.UserId,
+                RoundStartTime = newStartTime,
+            });
         }
     }
 }
