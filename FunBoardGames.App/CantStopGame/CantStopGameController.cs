@@ -150,8 +150,16 @@ namespace FunBoardGames.App.CantStopGame
             saveBustUsed = false;
             whiteConePositions.Clear();
             resetRoundUsed = false;
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
+            UpdateNextPlayerIndex();
             return players[currentPlayerIndex].Profile.UserId;
+        }
+
+        private void UpdateNextPlayerIndex()
+        {
+            do
+            {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
+            } while (players[currentPlayerIndex].TimeoutCount >= game.TimeoutLimit);
         }
 
         public bool IsBusted()
@@ -193,7 +201,7 @@ namespace FunBoardGames.App.CantStopGame
             if (IsBusted())
             {
                 whiteConePositions.Clear();
-                currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
+                UpdateNextPlayerIndex();
                 return new EndRoundResponseMessage()
                 {
                     IsBust = true,
@@ -287,12 +295,29 @@ namespace FunBoardGames.App.CantStopGame
                 return;
 
             whiteConePositions.Clear();
-            var currentId = players[currentPlayerIndex].Profile.UserId;
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
+            var currentPlayer = players[currentPlayerIndex];
+            currentPlayer.IncreaseTimeout();
+            var currentId = currentPlayer.Profile.UserId;
+
+            var playerTimeoutCount = players.Count(p => p.TimeoutCount < game.TimeoutLimit);
+
+            if(playerTimeoutCount < 2) // only one player left. so game is finished
+            {
+                await Task.Delay(1000);
+                await hubContext.Clients.Group(GroupKey).SendAsync(CantStopGameMessageNames.GameFinished, new GameFinishedResponseMessage
+                {
+                    PlayerScores = GetPlayerScores(),
+                });
+                return;
+            }
+
+            UpdateNextPlayerIndex();
+
             var newStartTime = StartRoundTimer();
 
             await hubContext.Clients.Group(GroupKey).SendAsync(CantStopGameMessageNames.Timeout, new TimeoutMessage(){
                 UserId = currentId,
+                TimeoutCount = currentPlayer.TimeoutCount,
                 NextUserId = players[currentPlayerIndex].Profile.UserId,
                 RoundStartTime = newStartTime,
             });

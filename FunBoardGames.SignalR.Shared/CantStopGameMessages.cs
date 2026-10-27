@@ -84,6 +84,7 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
     public class TimeoutMessage
     {
         public int UserId { get; set; }
+        public int TimeoutCount { get; set; }
         public int NextUserId { get; set; }
         public DateTimeOffset RoundStartTime { get; set; }
     }
