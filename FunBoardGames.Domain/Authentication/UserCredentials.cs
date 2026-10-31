@@ -1,4 +1,7 @@
-namespace FunBoardGames.Database.Entities
+
+using System;
+
+namespace FunBoardGames.Domain.Authentication
 {
     public class UserCredentials
     {

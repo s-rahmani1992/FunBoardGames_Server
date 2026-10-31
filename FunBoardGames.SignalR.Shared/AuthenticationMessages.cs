@@ -7,13 +7,6 @@ namespace FunBoardGames.Network.SignalR.Shared
         public const string SignIn = "SignIn";
     }
 
-    public class UserProfileDTO
-    {
-        public int UserId { get; set; }
-        public string PlayerName { get; set; } = string.Empty;
-        public int Avatar { get; set; } = 0;
-    }
-
     public enum AuthenticationErrorCode
     {
         None = 0,
@@ -38,7 +31,7 @@ namespace FunBoardGames.Network.SignalR.Shared
 
     public class AuthenticationResponseMessage
     {
-        public UserProfileDTO? ProfileDTO { get; set; }
+        public Profile? Profile { get; set; }
         public string AuthToken { get; set; } = string.Empty;
         public AuthenticationErrorCode ErrorCode { get; set; } = AuthenticationErrorCode.None;
     }

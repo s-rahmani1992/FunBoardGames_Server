@@ -1,5 +1,6 @@
 ﻿using FunBoardGames.Database.Configurations;
 using FunBoardGames.Database.Entities;
+using FunBoardGames.Domain.Authentication;
 using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.EntityFrameworkCore;
 

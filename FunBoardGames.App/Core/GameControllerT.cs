@@ -39,7 +39,7 @@ namespace FunBoardGames.App.Core
         {
             return players.Select(player => new PlayerInfoDTO
             {
-                UserProfile = player.Profile.ToDTO(),
+                UserProfile = player.Profile,
             });
         }
 

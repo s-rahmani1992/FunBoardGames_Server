@@ -1,5 +1,5 @@
 ﻿using FunBoardGames.App.Core;
-using FunBoardGames.Database.Entities;
+using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.Lobby
 {

@@ -1,6 +1,6 @@
 ﻿using FunBoardGames.App.CantStopGame;
 using FunBoardGames.App.Lobby;
-using FunBoardGames.Database.Entities;
+using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.CantStop;
 using Microsoft.AspNetCore.SignalR;
 

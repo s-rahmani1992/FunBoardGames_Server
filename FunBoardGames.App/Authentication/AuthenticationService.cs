@@ -1,5 +1,5 @@
-﻿using FunBoardGames.Database;
-using FunBoardGames.Database.Entities;
+﻿
+using FunBoardGames.Database;
 using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -35,7 +35,7 @@ namespace FunBoardGames.App.Authentication
 
             return new AuthenticationResponseMessage
             {
-                ProfileDTO = ToProfileDTO(profile),
+                Profile = profile,
                 AuthToken = authToken,
                 ErrorCode = AuthenticationErrorCode.None,
             };
@@ -76,19 +76,9 @@ namespace FunBoardGames.App.Authentication
 
             return new AuthenticationResponseMessage
             {
-                ProfileDTO = ToProfileDTO(profile),
+                Profile = profile,
                 AuthToken = request.AuthToken,
                 ErrorCode = AuthenticationErrorCode.None,
-            };
-        }
-
-        private static UserProfileDTO ToProfileDTO(Profile profile)
-        {
-            return new UserProfileDTO
-            {
-                UserId = profile.UserId,
-                PlayerName = profile.PlayerName,
-                Avatar = profile.Avatar,
             };
         }
 
@@ -96,7 +86,7 @@ namespace FunBoardGames.App.Authentication
         {
             return new AuthenticationResponseMessage
             {
-                ProfileDTO = null,
+                Profile = null,
                 AuthToken = string.Empty,
                 ErrorCode = errorCode,
             };

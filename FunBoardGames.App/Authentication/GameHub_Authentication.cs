@@ -1,5 +1,4 @@
 ﻿using FunBoardGames.App.Authentication;
-using FunBoardGames.Database.Entities;
 using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.AspNetCore.SignalR;
 
@@ -25,9 +24,9 @@ namespace FunBoardGames.App
 
         async Task CompleteAuthenticationRequest(string messageName, AuthenticationResponseMessage response)
         {
-            if (response.ErrorCode == AuthenticationErrorCode.None && response.ProfileDTO != null)
+            if (response.ErrorCode == AuthenticationErrorCode.None && response.Profile != null)
             {
-                Context.Items[ContextNames.Profile] = new Profile(response.ProfileDTO);
+                Context.Items[ContextNames.Profile] = new Profile(response.Profile);
             }
 
             await Clients.Caller.SendAsync(messageName, response);

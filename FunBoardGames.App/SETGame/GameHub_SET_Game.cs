@@ -1,6 +1,6 @@
 ﻿using FunBoardGames.App.Lobby;
 using FunBoardGames.App.SETGame;
-using FunBoardGames.Database.Entities;
+using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.Network.SignalR.Shared.SET;
 using Microsoft.AspNetCore.SignalR;
 

@@ -1,10 +1,12 @@
-﻿using FunBoardGames.Database.Entities;
+﻿
+using FunBoardGames.Domain.Authentication;
+using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace FunBoardGames.Database.Configurations
 {
-    internal class ProfileConfiguration : IEntityTypeConfiguration<Entities.Profile>
+    internal class ProfileConfiguration : IEntityTypeConfiguration<Profile>
     {
         public void Configure(EntityTypeBuilder<Profile> profileBuilder)
         {

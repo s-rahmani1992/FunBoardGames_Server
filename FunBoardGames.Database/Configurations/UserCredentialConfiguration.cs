@@ -1,4 +1,5 @@
-﻿using FunBoardGames.Database.Entities;
+﻿
+using FunBoardGames.Domain.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

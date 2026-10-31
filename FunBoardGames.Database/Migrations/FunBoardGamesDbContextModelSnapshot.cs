@@ -69,7 +69,7 @@ namespace FunBoardGames.Database.Migrations
                     b.UseTptMappingStrategy();
                 });
 
-            modelBuilder.Entity("FunBoardGames.Database.Entities.Profile", b =>
+            modelBuilder.Entity("FunBoardGames.Network.SignalR.Shared.Profile", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -101,7 +101,7 @@ namespace FunBoardGames.Database.Migrations
                     b.ToTable("User-Profiles", (string)null);
                 });
 
-            modelBuilder.Entity("FunBoardGames.Database.Entities.UserCredentials", b =>
+            modelBuilder.Entity("FunBoardGames.Domain.Authentication.UserCredentials", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

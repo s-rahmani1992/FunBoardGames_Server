@@ -1,5 +1,5 @@
 using FunBoardGames.Database;
-using FunBoardGames.Database.Entities;
+using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.SignalR.Shared;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +26,7 @@ namespace FunBoardGames.App
             }
 
             Context.Items[ContextNames.Profile] = new Profile(updatedProfile);
-            await Clients.Caller.SendAsync(UserMessageNames.ProfileUpdate, updatedProfile.ToDTO());
+            await Clients.Caller.SendAsync(UserMessageNames.ProfileUpdate, updatedProfile);
         }
 
         [HubMethodName(UserMessageNames.ChangePlayerAvatar)]
@@ -44,7 +44,7 @@ namespace FunBoardGames.App
                 return;
             }
             Context.Items[ContextNames.Profile] = new Profile(updatedProfile);
-            await Clients.Caller.SendAsync(UserMessageNames.ProfileUpdate, updatedProfile.ToDTO());
+            await Clients.Caller.SendAsync(UserMessageNames.ProfileUpdate, updatedProfile);
         }
     }
 }

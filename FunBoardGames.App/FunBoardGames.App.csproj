@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FunBoardGames.Database\FunBoardGames.Database.csproj" />
     <ProjectReference Include="..\FunBoardGames.SignalR.Shared\FunBoardGames.SignalR.Shared.csproj" />
+    <ProjectReference Include="..\FunBoardGames.Domain\FunBoardGames.Domain.csproj" />
   </ItemGroup>
 
 </Project>

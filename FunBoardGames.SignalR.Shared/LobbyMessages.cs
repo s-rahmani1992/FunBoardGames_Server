@@ -33,7 +33,7 @@ namespace FunBoardGames.Network.SignalR.Shared
 
     public class PlayerInfoDTO
     {
-        public UserProfileDTO UserProfile { get; set; }
+        public Profile UserProfile { get; set; }
     }
 
     public class JoinRoomResponseMessage

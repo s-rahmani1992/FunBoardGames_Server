@@ -1,11 +1,8 @@
 ﻿using FunBoardGames.App.Core;
 using FunBoardGames.App.Lobby;
-using FunBoardGames.Database.Entities;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.SignalR.Shared;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using System.Text.RegularExpressions;
 
 namespace FunBoardGames.App
 {
@@ -37,12 +34,7 @@ namespace FunBoardGames.App
             {
                 NewPlayer = new PlayerInfoDTO()
                 {
-                    UserProfile = new UserProfileDTO
-                    {
-                        UserId = profile.UserId,
-                        PlayerName = profile.PlayerName,
-                        Avatar = profile.Avatar,
-                    },
+                    UserProfile = profile,
                 },
             });
 
