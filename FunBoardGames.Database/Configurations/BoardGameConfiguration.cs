@@ -1,4 +1,4 @@
-using FunBoardGames.Database.Entities;
+
 using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

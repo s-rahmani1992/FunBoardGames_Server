@@ -1,4 +1,5 @@
-﻿using FunBoardGames.Network.SignalR.Shared.SET;
+﻿using FunBoardGames.Network.SignalR.Shared;
+using FunBoardGames.Network.SignalR.Shared.SET;
 
 namespace FunBoardGames.App.SETGame
 {
@@ -25,6 +26,35 @@ namespace FunBoardGames.App.SETGame
             }
         }
 
+        public static List<SETCardDTO> GenerateRandomDeck(SETGameData game)
+        {
+            var deck =
+                from color in GetAttributeValues(game.ColorAttribute, nameof(game.ColorAttribute))
+                from shape in GetAttributeValues(game.ShapeAttribute, nameof(game.ShapeAttribute))
+                from count in GetAttributeValues(game.CountAttribute, nameof(game.CountAttribute))
+                from shading in GetAttributeValues(game.ShadingAttribute, nameof(game.ShadingAttribute))
+                select new SETCardDTO
+                {
+                    Color = color,
+                    Shape = shape,
+                    CountIndex = count,
+                    Shading = shading,
+                };
+
+            return deck.OrderBy(_ => Random.Shared.Next()).ToList();
+        }
+
+        static byte[] GetAttributeValues(int? attribute, string attributeName)
+        {
+            if (attribute == null)
+                return [0, 1, 2];
+
+            if (attribute < 0 || attribute >= SETGameData.AttributeValueCount)
+                throw new ArgumentOutOfRangeException(attributeName, attribute, $"Must be null or between 0 and {SETGameData.AttributeValueCount - 1}.");
+
+            return [(byte)attribute.Value];
+        }
+
         public static bool IsSET(SETCardDTO card1, SETCardDTO card2, SETCardDTO card3)
         {
             if (CompareItems(card1.Color, card2.Color, card3.Color) == TripleComparisonResult.NONE)
@@ -42,9 +72,6 @@ namespace FunBoardGames.App.SETGame
             return true;
         }
 
-        /// <summary>
-        /// Returns the only card that completes a SET with the two given cards.
-        /// </summary>
         public static SETCardDTO GetThirdSETCard(SETCardDTO card1, SETCardDTO card2)
         {
             return new SETCardDTO

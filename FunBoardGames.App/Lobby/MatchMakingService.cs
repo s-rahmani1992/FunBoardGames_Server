@@ -1,10 +1,9 @@
+
 using FunBoardGames.App.CantStopGame;
 using FunBoardGames.App.Core;
 using FunBoardGames.App.SETGame;
 using FunBoardGames.Database;
-using FunBoardGames.Database.Entities;
 using FunBoardGames.Network.SignalR.Shared;
-using FunBoardGames.SignalR.Shared;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
@@ -21,9 +20,9 @@ namespace FunBoardGames.App.Lobby
 
         readonly IDbContextFactory<FunBoardGamesDbContext> _dbContextFactory;
         readonly IHubContext<GameHub> _hubContext;
-        readonly ConcurrentDictionary<uint, GameMatchMaker> _activeMatchMakers = new();
+        readonly ConcurrentDictionary<int, GameMatchMaker> _activeMatchMakers = new();
 
-        public async Task<GameController> JoinGame(uint gameId, Profile profile)
+        public async Task<GameController> JoinGame(int gameId, Profile profile)
         {
             if (_activeMatchMakers.TryGetValue(gameId, out var matchMaker))
             {
@@ -55,7 +54,7 @@ namespace FunBoardGames.App.Lobby
             }
         }
 
-        public async Task<uint?> FindGameId(BoardGameType gameType)
+        public async Task<int?> FindGameId(BoardGameType gameType)
         {
             var entityGameType = ToEntityGameType(gameType);
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
@@ -70,41 +69,10 @@ namespace FunBoardGames.App.Lobby
             _ => throw new ArgumentOutOfRangeException(nameof(gameType)),
         };
 
-        public async Task<List<GameDTO>> GetGames()
+        public async Task<List<BoardGameData>> GetGames()
         {
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
-            var gameEntities = await dbContext.GetAllGames();
-            return gameEntities.Select(ToGameDTO).ToList();
+            return await dbContext.GetAllGames();
         }
-
-        static GameDTO ToGameDTO(BoardGameData entity) => entity switch
-        {
-            SETGameData setGame => new SETGameDTO
-            {
-                Id = setGame.Id,
-                Name = setGame.Name,
-                GameType = BoardGameType.SET,
-                BeginCardCount = setGame.VisibleCardCount,
-                PlayerCount = setGame.PlayerCount,
-                GuessTime = setGame.PlayerCount,
-                RoundTime = setGame.RoundTime,
-                WrongLimit = setGame.WrongLimit,
-                HintLimit = setGame.HintLimit,
-                AttributeCount = setGame.AttributeCount,
-            },
-            CantStopGameData cantStopGame => new CantStopGameDTO
-            {
-                Id = cantStopGame.Id,
-                Name = cantStopGame.Name,
-                GameType = BoardGameType.CantStop,
-                PlayerCount = cantStopGame.PlayerCount,
-                BoardData = cantStopGame.BoardData,
-                MarkerConeCount = cantStopGame.MarkerConeCount,
-                WinConeCount = cantStopGame.WinConeCount,
-                RoundTime = cantStopGame.RoundTime,
-                TimeoutLimit = cantStopGame.TimeoutLimit,
-            },
-            _ => throw new NotSupportedException($"Unsupported game entity type: {entity.GetType()}"),
-        };
     }
 }

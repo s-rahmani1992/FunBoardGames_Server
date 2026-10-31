@@ -1,7 +1,5 @@
 ﻿
-using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 namespace FunBoardGames.Network.SignalR.Shared
 {
@@ -20,15 +18,6 @@ namespace FunBoardGames.Network.SignalR.Shared
     {
         SET,
         CantStop,
-    }
-
-    public class RoomInfoDTO
-    {
-        public uint Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public BoardGameType GameType { get; set; }
-        public int PlayerCount { get; set; }
-        public int MaxPlayers { get; set; }
     }
 
     public class PlayerInfoDTO
@@ -59,6 +48,6 @@ namespace FunBoardGames.Network.SignalR.Shared
 
     public class JoinGameRequestMessage
     {
-        public uint GameId { get; set; }
+        public int GameId { get; set; }
     }
 }

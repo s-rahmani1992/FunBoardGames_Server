@@ -24,7 +24,7 @@ namespace FunBoardGames.Database.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "game_type", new[] { "set", "cant_stop" });
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("FunBoardGames.Database.Entities.BoardGameData", b =>
+            modelBuilder.Entity("FunBoardGames.Network.SignalR.Shared.BoardGameData", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -142,9 +142,9 @@ namespace FunBoardGames.Database.Migrations
                     b.ToTable("User_Credentials", (string)null);
                 });
 
-            modelBuilder.Entity("FunBoardGames.Database.Entities.CantStopGameData", b =>
+            modelBuilder.Entity("FunBoardGames.Network.SignalR.Shared.CantStopGameData", b =>
                 {
-                    b.HasBaseType("FunBoardGames.Database.Entities.BoardGameData");
+                    b.HasBaseType("FunBoardGames.Network.SignalR.Shared.BoardGameData");
 
                     b.Property<string>("BoardData")
                         .IsRequired()
@@ -178,9 +178,9 @@ namespace FunBoardGames.Database.Migrations
                     b.ToTable("CantStop_Games", (string)null);
                 });
 
-            modelBuilder.Entity("FunBoardGames.Database.Entities.SETGameData", b =>
+            modelBuilder.Entity("FunBoardGames.Network.SignalR.Shared.SETGameData", b =>
                 {
-                    b.HasBaseType("FunBoardGames.Database.Entities.BoardGameData");
+                    b.HasBaseType("FunBoardGames.Network.SignalR.Shared.BoardGameData");
 
                     b.Property<int?>("ColorAttribute")
                         .HasColumnType("integer")
@@ -238,29 +238,29 @@ namespace FunBoardGames.Database.Migrations
                         });
                 });
 
-            modelBuilder.Entity("FunBoardGames.Database.Entities.Profile", b =>
+            modelBuilder.Entity("FunBoardGames.Network.SignalR.Shared.Profile", b =>
                 {
-                    b.HasOne("FunBoardGames.Database.Entities.UserCredentials", null)
+                    b.HasOne("FunBoardGames.Domain.Authentication.UserCredentials", null)
                         .WithOne()
-                        .HasForeignKey("FunBoardGames.Database.Entities.Profile", "UserId")
+                        .HasForeignKey("FunBoardGames.Network.SignalR.Shared.Profile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("FunBoardGames.Database.Entities.CantStopGameData", b =>
+            modelBuilder.Entity("FunBoardGames.Network.SignalR.Shared.CantStopGameData", b =>
                 {
-                    b.HasOne("FunBoardGames.Database.Entities.BoardGameData", null)
+                    b.HasOne("FunBoardGames.Network.SignalR.Shared.BoardGameData", null)
                         .WithOne()
-                        .HasForeignKey("FunBoardGames.Database.Entities.CantStopGameData", "Id")
+                        .HasForeignKey("FunBoardGames.Network.SignalR.Shared.CantStopGameData", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("FunBoardGames.Database.Entities.SETGameData", b =>
+            modelBuilder.Entity("FunBoardGames.Network.SignalR.Shared.SETGameData", b =>
                 {
-                    b.HasOne("FunBoardGames.Database.Entities.BoardGameData", null)
+                    b.HasOne("FunBoardGames.Network.SignalR.Shared.BoardGameData", null)
                         .WithOne()
-                        .HasForeignKey("FunBoardGames.Database.Entities.SETGameData", "Id")
+                        .HasForeignKey("FunBoardGames.Network.SignalR.Shared.SETGameData", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

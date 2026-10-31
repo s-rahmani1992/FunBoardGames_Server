@@ -1,5 +1,5 @@
-﻿using FunBoardGames.Database.Configurations;
-using FunBoardGames.Database.Entities;
+﻿
+using FunBoardGames.Database.Configurations;
 using FunBoardGames.Domain.Authentication;
 using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -103,7 +103,7 @@ namespace FunBoardGames.Database
             return (AuthenticationErrorCode.None, profile);
         }
 
-        public async Task<BoardGameData> GetGameById(uint gameId)
+        public async Task<BoardGameData> GetGameById(int gameId)
         {
             return await Games.FirstOrDefaultAsync(g => g.Id == gameId && g.Deleted_At == null);
         }

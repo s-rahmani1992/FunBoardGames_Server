@@ -1,15 +1,20 @@
-﻿
-using FunBoardGames.Network.SignalR.Shared;
+﻿using System;
+using System.Text.Json.Serialization;
 
-namespace FunBoardGames.Database.Entities
+namespace FunBoardGames.Network.SignalR.Shared
 {
+    [JsonConverter(typeof(BoardGameConverter))]
     public class BoardGameData
     {
-        public uint Id { get; set; }
+        public int Id { get; set; }
         public BoardGameType GameType { get; set; }
         public string Name { get; set; } = string.Empty;
-        public uint PlayerCount { get; set; } = 2;
+        public int PlayerCount { get; set; } = 2;
+
+        [JsonIgnore]
         public DateTimeOffset Created_At { get; set; } = DateTimeOffset.UtcNow;
+
+        [JsonIgnore]
         public DateTimeOffset? Deleted_At { get; set; } = null;
     }
 }

@@ -1,5 +1,6 @@
-﻿using FunBoardGames.App.Core;
-using FunBoardGames.Database.Entities;
+﻿
+using FunBoardGames.Network.SignalR.Shared;
+using FunBoardGames.App.Core;
 using FunBoardGames.Network.SignalR.Shared.SET;
 using Microsoft.AspNetCore.SignalR;
 
@@ -25,7 +26,7 @@ namespace FunBoardGames.App.SETGame
         bool isFinished;
         int roundNumber;
 
-        const int guessTime = 7000;
+        const int guessTime = (int)(SETGameData.GuessTime * 1000);
 
         IClientProxy ClientGroup => hubContext.Clients.Group(GroupKey);
 
@@ -69,7 +70,7 @@ namespace FunBoardGames.App.SETGame
         {
             lock (stateLock)
             {
-                deck = game.GenerateRandomDeck();
+                deck = SETGameUtilities.GenerateRandomDeck(game);
                 cardCursor = 0;
                 placedCards.Clear();
                 hintCards.Clear();

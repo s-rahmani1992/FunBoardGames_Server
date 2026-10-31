@@ -1,5 +1,4 @@
 
-using FunBoardGames.Database.Entities;
 using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.Core
@@ -16,7 +15,7 @@ namespace FunBoardGames.App.Core
             this.createPlayer = createPlayer;
         }
 
-        public override uint GameId => game.Id;
+        public override int GameId => game.Id;
         public override int PlayerCount => players.Count;
         public override bool IsOpen => players.Count < (int)game.PlayerCount;
 

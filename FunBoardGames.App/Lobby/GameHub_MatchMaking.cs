@@ -62,7 +62,7 @@ namespace FunBoardGames.App
         public async Task JoinStraightGame(JoinStraightGameRequestMessage joinStraightGameMsg)
         {
             var lobbyService = _provider.GetRequiredService<MatchMakingService>();
-            uint? gameId = await lobbyService.FindGameId(joinStraightGameMsg.Game);
+            int? gameId = await lobbyService.FindGameId(joinStraightGameMsg.Game);
 
             if (gameId == null)
                 return;

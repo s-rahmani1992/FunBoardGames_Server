@@ -11,7 +11,7 @@ namespace FunBoardGames.App.Core
         }
 
         public abstract int PlayerCount { get; }
-        public abstract uint GameId {  get; }
+        public abstract int GameId {  get; }
         public abstract bool IsOpen { get; }
 
 
