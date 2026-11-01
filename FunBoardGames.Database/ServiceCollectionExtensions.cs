@@ -1,3 +1,4 @@
+using FunBoardGames.Domain.ErrorHandling;
 using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,14 +8,11 @@ namespace FunBoardGames.Database
 {
     public static class ServiceCollectionExtensions
     {
-        /// <summary>
-        /// Registers <see cref="FunBoardGamesDbContext"/> configured for PostgreSQL using the
-        /// supplied connection string.
-        /// </summary>
         public static IServiceCollection AddFunBoardGamesDatabase(this IServiceCollection services, string connectionString)
         {
             var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
             dataSourceBuilder.MapEnum<BoardGameType>("game_type");
+            dataSourceBuilder.MapEnum<ErrorType>("error_type");
             var dataSource = dataSourceBuilder.Build();
 
             services.AddDbContextFactory<FunBoardGamesDbContext>(options =>

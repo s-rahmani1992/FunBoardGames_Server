@@ -1,6 +1,7 @@
 ﻿
 using FunBoardGames.Database.Configurations;
 using FunBoardGames.Domain.Authentication;
+using FunBoardGames.Domain.ErrorHandling;
 using FunBoardGames.Network.SignalR.Shared;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,7 @@ namespace FunBoardGames.Database
         DbSet<UserCredentials> UserCredentials => Set<UserCredentials>();
         DbSet<Profile> Profiles => Set<Profile>();
         DbSet<BoardGameData> Games => Set<BoardGameData>();
+        DbSet<ErrorLog> ErrorLogs => Set<ErrorLog>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -33,6 +35,16 @@ namespace FunBoardGames.Database
 
             new CantStopGameConfiguration().Configure(modelBuilder.Entity<CantStopGameData>());
 
+            modelBuilder.HasPostgresEnum<ErrorType>(name: "error_type");
+
+            new ErrorLogConfiguration().Configure(modelBuilder.Entity<ErrorLog>());
+        }
+
+        public async Task<int> AddErrorLog(ErrorLog errorLog)
+        {
+            await ErrorLogs.AddAsync(errorLog);
+            await SaveChangesAsync();
+            return errorLog.Id;
         }
 
         public async Task<UserCredentials> GetUserCredentials(int userId, string deviceId)
