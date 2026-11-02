@@ -3,20 +3,8 @@ using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.Core
 {
-    public class BoardGamePlayer
+    public class BoardGamePlayer(Profile profile)
     {
-        public BoardGamePlayer(Profile  profile)
-        {
-            Profile = profile;
-        }
-
-        public Profile Profile { get; protected set; }
-
-        public bool IsGameLoaded { get; protected set; } = false;
-
-        public void SetGameLoaded()
-        {
-            IsGameLoaded = true;
-        }
+        public Profile Profile { get; protected set; } = profile;
     }
 }

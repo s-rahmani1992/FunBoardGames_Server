@@ -8,6 +8,7 @@ namespace FunBoardGames.App.CantStopGame
 {
     public class CantStopGameController : GameControllerT<CantStopGamePlayer, CantStopGameData>
     {
+        GameDataMessage? beginData = null;
         SortedDictionary<int, int> whiteConePositions = new();
         int currentPlayerIndex = 0;
         public HashSet<int> FinishedColumns = new();
@@ -20,8 +21,39 @@ namespace FunBoardGames.App.CantStopGame
 
         public CantStopGameController(uint id, CantStopGameData entity, IHubContext<GameHub> hub) : base(id, entity, (profile) => new CantStopGamePlayer(profile))
         {
-            GroupKey = "Cant_Stop_" + RoomId;
             hubContext = hub;
+        }
+
+        static PlayerInfoDTO ToDto(CantStopGamePlayer player)
+        {
+            return new PlayerInfoDTO { UserProfile = player.Profile };
+        }
+
+        protected override void BeginGame()
+        {
+            beginData = new GameDataMessage
+            {
+                StartPlayerUserId = GetCurrentPlayerId(),
+                StartTime = StartRound(),
+            };
+        }
+
+        protected override Task SendPlayerJoinedAsync(IHubCallerClients clients, int newUserId)
+        {
+            return clients.OthersInGroup(GroupKey).SendAsync(LobbyMessageNames.PlayerJoinGame, new PlayerJoinRoomResponseMessage<PlayerInfoDTO, GameDataMessage>
+            {
+                NewPlayer = ToDto(players.First(player => player.Profile.UserId == newUserId)),
+                BeginData = beginData,
+            });
+        }
+
+        protected override Task SendJoinedRoomAsync(IHubCallerClients clients)
+        {
+            return clients.Caller.SendAsync(LobbyMessageNames.JoinGame, new JoinRoomResponseMessage<PlayerInfoDTO, GameDataMessage>
+            {
+                JoinedPlayers = players.Select(ToDto).ToList(),
+                BeginData = beginData,
+            });
         }
 
         public int GetCurrentPlayerId()

@@ -8,24 +8,6 @@ namespace FunBoardGames.App
 {
     public partial class GameHub
     {
-        [HubMethodName(CantStopGameMessageNames.GameLoaded)]
-        public async Task SignalCantStopGameLoaded()
-        {
-            CantStopGameController cantStopController = Context.Items[ContextNames.Room] as CantStopGameController;
-            var profile = Context.Items[ContextNames.Profile] as Profile;
-
-            bool allPlayersLoaded = cantStopController.SetPlayerLoaded(profile.UserId);
-
-            if (allPlayersLoaded)
-            {
-                await Clients.Group(cantStopController.GroupKey).SendAsync(CantStopGameMessageNames.SendGameData, new GameDataMessage
-                {
-                    StartPlayerUserId = cantStopController.GetCurrentPlayerId(),
-                    StartTime = cantStopController.StartRound(),
-                });
-            }
-        }
-
         [HubMethodName(CantStopGameMessageNames.RollDice)]
         public async Task RollDice()
         {

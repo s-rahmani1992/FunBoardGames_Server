@@ -3,21 +3,20 @@ using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.Core
 {
-    public abstract class GameControllerT<TPlayer, TGame> : GameController where TPlayer : BoardGamePlayer where TGame : BoardGameData
+    public abstract class GameControllerT<TPlayer, TGame>(uint id, TGame game, Func<Profile, TPlayer> createPlayer) 
+        : GameController(id) where TPlayer : BoardGamePlayer where TGame : BoardGameData
     {
         protected readonly List<TPlayer> players = [];
-        protected readonly TGame game;
-        readonly Func<Profile, TPlayer> createPlayer;
-
-        protected GameControllerT(uint id, TGame game, Func<Profile, TPlayer> createPlayer) : base(id)
-        {
-            this.game = game;
-            this.createPlayer = createPlayer;
-        }
+        protected readonly TGame game = game;
+        readonly Func<Profile, TPlayer> createPlayer = createPlayer;
 
         public override int GameId => game.Id;
+        public override BoardGameType GameType => game.GameType;
         public override int PlayerCount => players.Count;
-        public override bool IsOpen => players.Count < (int)game.PlayerCount;
+        public override bool IsOpen => IsStarted == false && players.Count < game.PlayerCount;
+        protected bool IsStarted { get; private set; }
+
+        protected abstract void BeginGame();
 
         public override bool AddPlayer(Profile profile)
         {
@@ -25,29 +24,20 @@ namespace FunBoardGames.App.Core
                 return false;
 
             players.Add(createPlayer(profile));
+
+            if (IsOpen == false && IsStarted == false)
+            {
+                IsStarted = true;
+                BeginGame();
+            }
+
             return true;
         }
 
         public override bool RemovePlayer(int userId)
         {
             var player = players.FirstOrDefault(player => player.Profile.UserId == userId);
-            return players.Remove(player);
-        }
-
-        public override IEnumerable<PlayerInfoDTO> GetPlayers()
-        {
-            return players.Select(player => new PlayerInfoDTO
-            {
-                UserProfile = player.Profile,
-            });
-        }
-
-        public override bool SetPlayerLoaded(int userId)
-        {
-            var player = players.FirstOrDefault(p => p.Profile.UserId == userId);
-            player.SetGameLoaded();
-
-            return players.All(player => player.IsGameLoaded);
+            return player != null && players.Remove(player);
         }
     }
 }

@@ -4,26 +4,37 @@ using System.Collections.Concurrent;
 
 namespace FunBoardGames.App.Lobby
 {
-    public class GameMatchMakerT<T> : GameMatchMaker where T : GameController
+    public class GameMatchMakerT<T>(Func<uint, T> createGame) : GameMatchMaker where T : GameController
     {
         readonly ConcurrentDictionary<uint, T> games = new();
-        readonly Func<uint, T> createGame;
+        readonly Func<uint, T> createGame = createGame;
         uint nextRoomId = 0;
         readonly object matchLock = new();
 
-        /// <param name="createGame">Builds a new game room for the given room id.</param>
-        public GameMatchMakerT(Func<uint, T> createGame)
+        protected async Task<T?> Join(Profile profile, Func<GameController, Task> onJoined)
         {
-            this.createGame = createGame;
-        }
-
-        protected T Join(Profile profile)
-        {
-            lock (matchLock)
+            while (true)
             {
-                T game = FindOpenGame() ?? CreateGame();
-                game.AddPlayer(profile);
-                return game;
+                T game;
+                lock (matchLock)
+                    game = FindOpenGame() ?? CreateGame();
+
+                await game.RoomLock.WaitAsync();
+                try
+                {
+                    if (game.IsOpen == false || games.ContainsKey(game.RoomId) == false)
+                        continue;
+
+                    if (game.AddPlayer(profile) == false)
+                        return null;
+
+                    await onJoined(game);
+                    return game;
+                }
+                finally
+                {
+                    game.RoomLock.Release();
+                }
             }
         }
 
@@ -46,9 +57,9 @@ namespace FunBoardGames.App.Lobby
             return games.Values.FirstOrDefault(game => game.IsOpen);
         }
 
-        public override GameController JoinGame(Profile profile)
+        public override async Task<GameController?> JoinGame(Profile profile, Func<GameController, Task> onJoined)
         {
-            return Join(profile);
+            return await Join(profile, onJoined);
         }
 
         public override void RemoveGame(GameController gameController)

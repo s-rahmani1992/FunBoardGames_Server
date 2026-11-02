@@ -8,6 +8,8 @@ namespace FunBoardGames.App.SETGame
 {
     public class SETGameController : GameControllerT<SETGamePlayer, SETGameData>
     {
+        GameBeginMessage? beginData = null;
+
         List<SETCardDTO> deck = [];
         int cardCursor = 0;
         List<SETCardDTO> placedCards = [];
@@ -55,7 +57,6 @@ namespace FunBoardGames.App.SETGame
         public SETGameController(uint id, SETGameData entity, IHubContext<GameHub> hubContext, Action<GameController> onGameFinished)
             : base(id, entity, (profile) => new SETGamePlayer(profile))
         {
-            GroupKey = "SET_" + RoomId;
             this.hubContext = hubContext;
             this.onGameFinished = onGameFinished;
         }
@@ -66,7 +67,12 @@ namespace FunBoardGames.App.SETGame
                 FinishGame();
         }
 
-        public GameBeginMessage PrepareGame()
+        static PlayerInfoDTO ToDto(SETGamePlayer player)
+        {
+            return new PlayerInfoDTO { UserProfile = player.Profile };
+        }
+
+        protected override void BeginGame()
         {
             lock (stateLock)
             {
@@ -76,12 +82,30 @@ namespace FunBoardGames.App.SETGame
                 hintCards.Clear();
                 roundNumber = 0;
                 isFinished = false;
-                return new GameBeginMessage
+                beginData = new GameBeginMessage
                 {
                     NewCards = DestributeCards(game.VisibleCardCount),
                     RoundStartTime = StartRoundTimer(),
                 };
             }
+        }
+
+        protected override Task SendPlayerJoinedAsync(IHubCallerClients clients, int newUserId)
+        {
+            return clients.OthersInGroup(GroupKey).SendAsync(LobbyMessageNames.PlayerJoinGame, new PlayerJoinRoomResponseMessage<PlayerInfoDTO, GameBeginMessage>
+            {
+                NewPlayer = ToDto(players.First(player => player.Profile.UserId == newUserId)),
+                BeginData = beginData,
+            });
+        }
+
+        protected override Task SendJoinedRoomAsync(IHubCallerClients clients)
+        {
+            return clients.Caller.SendAsync(LobbyMessageNames.JoinGame, new JoinRoomResponseMessage<PlayerInfoDTO, GameBeginMessage>
+            {
+                JoinedPlayers = players.Select(ToDto).ToList(),
+                BeginData = beginData,
+            });
         }
 
         internal List<SETCardDTO> DestributeCards(int cardAmount)

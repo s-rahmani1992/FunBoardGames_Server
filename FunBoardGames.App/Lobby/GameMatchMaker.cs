@@ -5,8 +5,8 @@ namespace FunBoardGames.App.Lobby
 {
     public abstract class GameMatchMaker
     {
-        public abstract GameController JoinGame(Profile profile);
-    
+        public abstract Task<GameController?> JoinGame(Profile profile, Func<GameController, Task> onJoined);
+
         public abstract void RemoveGame(GameController gameController);
     }
 }

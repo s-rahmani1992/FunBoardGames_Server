@@ -6,7 +6,6 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
 {
     public static class SETGameMessageNames
     {
-        public const string GameStarted = "SET_GameStarted";
         public const string PlayerGuessStart = "SET_PlayerGuessStart";
         public const string PlayerGuess = "SET_PlayerGuessResult";
         public const string RoundTimeout = "SET_RoundTimeout";

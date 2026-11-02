@@ -8,21 +8,6 @@ namespace FunBoardGames.App
 {
     public partial class GameHub
     {
-        [HubMethodName(SETGameMessageNames.GameStarted)]
-        public async Task SignalGameLoaded()
-        {
-            SETGameController setController = Context.Items[ContextNames.Room] as SETGameController;
-            var profile = Context.Items[ContextNames.Profile] as Profile;
-
-            bool allPlayersLoaded = setController.SetPlayerLoaded(profile.UserId);
-
-            if (allPlayersLoaded)
-            {
-                var gameBeginMessage = setController.PrepareGame();
-                await Clients.Group(setController.GroupKey).SendAsync(SETGameMessageNames.GameStarted, gameBeginMessage);
-            }
-        }
-
         [HubMethodName(SETGameMessageNames.PlayerGuessStart)]
         public async Task PlayerStartGuess()
         {   

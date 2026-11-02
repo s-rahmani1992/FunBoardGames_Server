@@ -23,32 +23,25 @@ namespace FunBoardGames.App
         [HubMethodName(LobbyMessageNames.JoinGame)]
         public async Task JoinGame(JoinGameRequestMessage joinGameMsg)
         {
+            //TODO  This is a workaround for the fact that SignalR does not have a way to automatically remove a user from a group when they disconnect. We should probably move this to OnDisconnectedAsync, but that would require us to keep track of which game the user is in, which we don't currently do.
+            await LeaveRoomInternal(notifyCaller: false);
+
             var lobbyService = _provider.GetRequiredService<MatchMakingService>();
             var profile = Context.Items[ContextNames.Profile] as Profile;
-            GameController gameController = await lobbyService.JoinGame(joinGameMsg.GameId, profile);
 
-            Context.Items[ContextNames.Room] = gameController;
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameController.GroupKey);
-
-            await Clients.OthersInGroup(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerJoinRoom, new PlayerJoinRoomResponseMessage()
+            GameController? gameController = await lobbyService.JoinGame(joinGameMsg.GameId, profile, async controller =>
             {
-                NewPlayer = new PlayerInfoDTO()
+                Context.Items[ContextNames.Room] = controller;
+                await Groups.AddToGroupAsync(Context.ConnectionId, controller.GroupKey);
+                await controller.SendJoinMessagesAsync(Clients, profile.UserId);
+            });
+
+            if (gameController == null)
+            {
+                await Clients.Caller.SendAsync(LobbyMessageNames.JoinFailed, new JoinFailedMessage
                 {
-                    UserProfile = profile,
-                },
-            });
-
-            await Clients.Caller.SendAsync(LobbyMessageNames.JoinRoom, new JoinRoomResponseMessage
-            {
-                RoomId = gameController.RoomId,
-                JoinedPlayers = [.. gameController.GetPlayers()],
-            });
-
-            await Task.Delay(1000); // TODO: Delay to ensure the player has time to receive the JoinRoom message before sending AllPlayersReady, fix it later
-
-            if (gameController.IsOpen == false)
-            {
-                await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.AllPlayersReady);
+                    Reason = "Unable to join the game.",
+                });
             }
         }
 
@@ -58,43 +51,38 @@ namespace FunBoardGames.App
             await LeaveRoomInternal();
         }
 
-        [HubMethodName(LobbyMessageNames.JoinStraightGame)]
-        public async Task JoinStraightGame(JoinStraightGameRequestMessage joinStraightGameMsg)
+        async Task LeaveRoomInternal(bool notifyCaller = true)
         {
-            var lobbyService = _provider.GetRequiredService<MatchMakingService>();
-            int? gameId = await lobbyService.FindGameId(joinStraightGameMsg.Game);
-
-            if (gameId == null)
+            if (Context.Items[ContextNames.Room] is not GameController gameController)
                 return;
 
-            await JoinGame(new JoinGameRequestMessage { GameId = gameId.Value });
-        }
+            Context.Items.Remove(ContextNames.Room);
 
-        async Task LeaveRoomInternal()
-        {
-            if (Context.Items[ContextNames.Room] != null)
+            var profile = Context.Items[ContextNames.Profile] as Profile;
+            var leaveMessage = new PlayerLeaveRoomResponseMessage
             {
-                var profile = Context.Items[ContextNames.Profile] as Profile;
+                UserId = profile.UserId,
+            };
 
-                var gameController = Context.Items[ContextNames.Room] as GameController;
+            await gameController.RoomLock.WaitAsync();
+            try
+            {
                 gameController.RemovePlayer(profile.UserId);
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameController.GroupKey);
+                await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerLeave, leaveMessage);
 
-                await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerLeave, new PlayerLeaveRoomResponseMessage()
-                {
-                    UserId = profile.UserId,
-                });
-
-                await Clients.Caller.SendAsync(LobbyMessageNames.PlayerLeave, new PlayerLeaveRoomResponseMessage()
-                {
-                    UserId = profile.UserId,
-                });
+                if (notifyCaller)
+                    await Clients.Caller.SendAsync(LobbyMessageNames.PlayerLeave, leaveMessage);
 
                 if (gameController.PlayerCount == 0)
                 {
                     var lobbyService = _provider.GetRequiredService<MatchMakingService>();
                     lobbyService.RemoveGame(gameController);
                 }
+            }
+            finally
+            {
+                gameController.RoomLock.Release();
             }
         }
     }

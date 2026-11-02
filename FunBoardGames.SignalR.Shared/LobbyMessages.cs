@@ -1,17 +1,14 @@
-﻿
+
 using System.Collections.Generic;
 
 namespace FunBoardGames.Network.SignalR.Shared
 {
     public static class LobbyMessageNames
     {
-        public const string JoinRoom = "JoinRoom";
-        public const string PlayerJoinRoom = "PlayerJoinRoom";
-        public const string PlayerLeave = "PlayerLeave";
-        public const string PlayerReady = "PlayerReady";
-        public const string AllPlayersReady = "AllPlayersReady";
-        public const string JoinStraightGame = "JoinStraightGame";
         public const string JoinGame = "JoinGame";
+        public const string PlayerJoinGame = "PlayerJoinRoom";
+        public const string PlayerLeave = "PlayerLeave";
+        public const string JoinFailed = "JoinFailed";
     }
 
     public enum BoardGameType
@@ -25,15 +22,16 @@ namespace FunBoardGames.Network.SignalR.Shared
         public Profile UserProfile { get; set; }
     }
 
-    public class JoinRoomResponseMessage
+    public class JoinRoomResponseMessage<TPlayer, TBegin> where TPlayer : PlayerInfoDTO where TBegin : class
     {
-        public uint RoomId { get; set; }
-        public List<PlayerInfoDTO> JoinedPlayers { get; set; }
+        public List<TPlayer> JoinedPlayers { get; set; }
+        public TBegin? BeginData { get; set; }
     }
 
-    public class PlayerJoinRoomResponseMessage
+    public class PlayerJoinRoomResponseMessage<TPlayer, TBegin> where TPlayer : PlayerInfoDTO where TBegin : class
     {
-        public PlayerInfoDTO NewPlayer { get; set; }
+        public TPlayer NewPlayer { get; set; }
+        public TBegin? BeginData { get; set; }
     }
 
     public class PlayerLeaveRoomResponseMessage
@@ -41,9 +39,9 @@ namespace FunBoardGames.Network.SignalR.Shared
         public int UserId { get; set; }
     }
 
-    public class JoinStraightGameRequestMessage
+    public class JoinFailedMessage
     {
-        public BoardGameType Game { get; set; }
+        public string Reason { get; set; }
     }
 
     public class JoinGameRequestMessage
