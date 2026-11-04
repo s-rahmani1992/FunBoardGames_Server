@@ -1,4 +1,4 @@
-﻿
+
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.App.Core;
 using FunBoardGames.Network.SignalR.Shared.SET;
@@ -47,6 +47,7 @@ namespace FunBoardGames.App.SETGame
                     Corrects = player.CorrectScore,
                     Wrongs = player.WrongScore,
                     IsBusted = player.IsBusted,
+                    IsConnected = player.IsConnected,
                 });
             }
 
@@ -69,7 +70,7 @@ namespace FunBoardGames.App.SETGame
 
         static PlayerInfoDTO ToDto(SETGamePlayer player)
         {
-            return new PlayerInfoDTO { UserProfile = player.Profile };
+            return new PlayerInfoDTO { UserProfile = player.Profile, Index = player.Index };
         }
 
         protected override void BeginGame()
@@ -94,7 +95,7 @@ namespace FunBoardGames.App.SETGame
         {
             return clients.OthersInGroup(GroupKey).SendAsync(LobbyMessageNames.PlayerJoinGame, new PlayerJoinRoomResponseMessage<PlayerInfoDTO, GameBeginMessage>
             {
-                NewPlayer = ToDto(players.First(player => player.Profile.UserId == newUserId)),
+                NewPlayer = ToDto(players.First(player => player != null && player.Profile.UserId == newUserId)),
                 BeginData = beginData,
             });
         }
@@ -103,7 +104,7 @@ namespace FunBoardGames.App.SETGame
         {
             return clients.Caller.SendAsync(LobbyMessageNames.JoinGame, new JoinRoomResponseMessage<PlayerInfoDTO, GameBeginMessage>
             {
-                JoinedPlayers = players.Select(ToDto).ToList(),
+                JoinedPlayers = [.. players.Where(player => player != null).Select(ToDto)],
                 BeginData = beginData,
             });
         }
@@ -158,9 +159,7 @@ namespace FunBoardGames.App.SETGame
                     if (candidateIndices.TryGetValue(GetCardKey(thirdCard), out int thirdIndex) == false)
                         continue;
 
-                    List<int> deckIndices = new[] { candidates[i].index, candidates[j].index, thirdIndex }
-                        .Where(index => index >= 0)
-                        .ToList();
+                    List<int> deckIndices = [.. new[] { candidates[i].index, candidates[j].index, thirdIndex }.Where(index => index >= 0)];
 
                     if (deckIndices.Count <= cardAmount)
                         return deckIndices;
@@ -288,29 +287,45 @@ namespace FunBoardGames.App.SETGame
 
         async Task OnGuessTimerEnded(CancellationToken token)
         {
-            GuessResultResponse? guessResult = null;
-            RoundTimeoutMessage? timeoutMessage = null;
+            GuessResultResponse? guessResult;
+            RoundTimeoutMessage? timeoutMessage;
             lock (stateLock)
             {
                 if (token.IsCancellationRequested)
                     return;
 
-                var player = players.FirstOrDefault(player => player.Profile.UserId == guessingUserId);
-                guessingUserId = null;
-
-                if (player != null)
-                {
-                    AddWrongGuess(player);
-                    guessResult = CreateGuessResult(player, false, null);
-
-                    if (IsOnePlayerLeft())
-                        guessResult.FinalScores = FinishGame();
-                }
-
-                if (guessResult?.FinalScores == null && isRoundTimeoutPending)
-                    timeoutMessage = TimeoutRound();
+                (guessResult, timeoutMessage) = ResolveGuessTimeout();
             }
 
+            await SendGuessTimeout(guessResult, timeoutMessage);
+        }
+
+        // The guessing player ran out of time or disconnected, so the guess counts as a wrong one. Must be called with the state lock held
+        (GuessResultResponse? guessResult, RoundTimeoutMessage? timeoutMessage) ResolveGuessTimeout()
+        {
+            GuessResultResponse? guessResult = null;
+            RoundTimeoutMessage? timeoutMessage = null;
+
+            var player = players.FirstOrDefault(player => player.Profile.UserId == guessingUserId);
+            guessingUserId = null;
+
+            if (player != null)
+            {
+                AddWrongGuess(player);
+                guessResult = CreateGuessResult(player, false, null);
+
+                if (IsOnePlayerLeft())
+                    guessResult.FinalScores = FinishGame();
+            }
+
+            if (guessResult?.FinalScores == null && isRoundTimeoutPending)
+                timeoutMessage = TimeoutRound();
+
+            return (guessResult, timeoutMessage);
+        }
+
+        async Task SendGuessTimeout(GuessResultResponse? guessResult, RoundTimeoutMessage? timeoutMessage)
+        {
             if (guessResult != null)
             {
                 await ClientGroup.SendAsync(SETGameMessageNames.PlayerGuess, guessResult);
@@ -321,6 +336,36 @@ namespace FunBoardGames.App.SETGame
 
             if (timeoutMessage != null)
                 await SendRoundTimeout(timeoutMessage);
+        }
+
+        protected override async Task OnPlayerDisconnectedAsync(SETGamePlayer player)
+        {
+            GuessResultResponse? guessResult = null;
+            RoundTimeoutMessage? timeoutMessage = null;
+            List<SETPlayerResultDTO>? finalScores = null;
+
+            lock (stateLock)
+            {
+                if (isFinished)
+                    return;
+
+                if (guessingUserId == player.Profile.UserId)
+                {
+                    // Nobody is going to answer the guess, so it ends like a guess that ran out of time
+                    guessCancelTokenSource?.Cancel();
+                    (guessResult, timeoutMessage) = ResolveGuessTimeout();
+                }
+                else if (IsOnePlayerLeft())
+                    finalScores = FinishGame();
+            }
+
+            await SendGuessTimeout(guessResult, timeoutMessage);
+
+            if (finalScores != null)
+            {
+                await ClientGroup.SendAsync(SETGameMessageNames.GameFinished, new GameFinishedMessage { FinalScores = finalScores });
+                onGameFinished(this);
+            }
         }
 
         public GuessResultResponse? ProcessGuess(int userId, List<SETCardDTO> guessCards, out RoundTimeoutMessage? timeoutMessage)
@@ -377,7 +422,7 @@ namespace FunBoardGames.App.SETGame
                 player.IsBusted = true;
         }
 
-        bool IsOnePlayerLeft() => players.Count(player => player.IsBusted == false) <= 1;
+        bool IsOnePlayerLeft() => ActivePlayerCount <= 1;
 
         static GuessResultResponse CreateGuessResult(SETGamePlayer player, bool isCorrect, List<SETCardDTO>? guessCards)
         {

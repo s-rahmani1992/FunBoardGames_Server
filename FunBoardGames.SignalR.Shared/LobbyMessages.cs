@@ -20,6 +20,7 @@ namespace FunBoardGames.Network.SignalR.Shared
     public class PlayerInfoDTO
     {
         public Profile UserProfile { get; set; }
+        public int Index { get; set; }
     }
 
     public class JoinRoomResponseMessage<TPlayer, TBegin> where TPlayer : PlayerInfoDTO where TBegin : class

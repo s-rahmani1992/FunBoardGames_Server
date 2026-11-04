@@ -29,7 +29,7 @@ namespace FunBoardGames.App.Lobby
             GameMatchMaker newMatchMaker = gameEntity switch
             {
                 SETGameData setGame => new GameMatchMakerT<SETGameController>(roomId => new SETGameController(roomId, setGame, _hubContext, RemoveGame)),
-                CantStopGameData cantStopGame => new GameMatchMakerT<CantStopGameController>(roomId => new CantStopGameController(roomId, cantStopGame, _hubContext)),
+                CantStopGameData cantStopGame => new GameMatchMakerT<CantStopGameController>(roomId => new CantStopGameController(roomId, cantStopGame, _hubContext, RemoveGame)),
                 _ => null,
             };
 

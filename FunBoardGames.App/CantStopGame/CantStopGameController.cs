@@ -1,4 +1,4 @@
-﻿
+
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.App.Core;
 using FunBoardGames.Network.SignalR.Shared.CantStop;
@@ -17,16 +17,32 @@ namespace FunBoardGames.App.CantStopGame
         bool resetRoundUsed = false;
         bool saveBustUsed = false;
         readonly IHubContext<GameHub> hubContext;
+        readonly Action<GameController> onGameFinished;
         CancellationTokenSource? roundCancelTokenSource;
 
-        public CantStopGameController(uint id, CantStopGameData entity, IHubContext<GameHub> hub) : base(id, entity, (profile) => new CantStopGamePlayer(profile))
+        // Guards the turn, which is changed by hub calls, the round timer and disconnections concurrently
+        readonly object stateLock = new();
+        bool isOver;
+
+        public CantStopGameController(uint id, CantStopGameData entity, IHubContext<GameHub> hub, Action<GameController> onGameFinished)
+            : base(id, entity, (profile) => new CantStopGamePlayer(profile))
         {
             hubContext = hub;
+            this.onGameFinished = onGameFinished;
+        }
+
+        public override void OnRemoved()
+        {
+            lock (stateLock)
+            {
+                isOver = true;
+                roundCancelTokenSource?.Cancel();
+            }
         }
 
         static PlayerInfoDTO ToDto(CantStopGamePlayer player)
         {
-            return new PlayerInfoDTO { UserProfile = player.Profile };
+            return new PlayerInfoDTO { UserProfile = player.Profile, Index = player.Index };
         }
 
         protected override void BeginGame()
@@ -42,7 +58,7 @@ namespace FunBoardGames.App.CantStopGame
         {
             return clients.OthersInGroup(GroupKey).SendAsync(LobbyMessageNames.PlayerJoinGame, new PlayerJoinRoomResponseMessage<PlayerInfoDTO, GameDataMessage>
             {
-                NewPlayer = ToDto(players.First(player => player.Profile.UserId == newUserId)),
+                NewPlayer = ToDto(players.First(player => player != null && player.Profile.UserId == newUserId)),
                 BeginData = beginData,
             });
         }
@@ -51,7 +67,7 @@ namespace FunBoardGames.App.CantStopGame
         {
             return clients.Caller.SendAsync(LobbyMessageNames.JoinGame, new JoinRoomResponseMessage<PlayerInfoDTO, GameDataMessage>
             {
-                JoinedPlayers = players.Select(ToDto).ToList(),
+                JoinedPlayers = players.Where(player => player != null).Select(ToDto).ToList(),
                 BeginData = beginData,
             });
         }
@@ -179,19 +195,26 @@ namespace FunBoardGames.App.CantStopGame
                 }
             }
 
-            saveBustUsed = false;
-            whiteConePositions.Clear();
-            resetRoundUsed = false;
-            UpdateNextPlayerIndex();
-            return players[currentPlayerIndex].Profile.UserId;
+            lock (stateLock)
+            {
+                saveBustUsed = false;
+                whiteConePositions.Clear();
+                resetRoundUsed = false;
+                UpdateNextPlayerIndex();
+                return players[currentPlayerIndex].Profile.UserId;
+            }
         }
 
+        // The next player that can still play. Must be called with the state lock held
         private void UpdateNextPlayerIndex()
         {
-            do
+            for (int i = 0; i < players.Length; i++)
             {
-                currentPlayerIndex = (currentPlayerIndex + 1) % players.Count();
-            } while (players[currentPlayerIndex].TimeoutCount >= game.TimeoutLimit);
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.Length;
+
+                if (players[currentPlayerIndex].CanPlay)
+                    return;
+            }
         }
 
         public bool IsBusted()
@@ -232,14 +255,17 @@ namespace FunBoardGames.App.CantStopGame
 
             if (IsBusted())
             {
-                whiteConePositions.Clear();
-                UpdateNextPlayerIndex();
-                return new EndRoundResponseMessage()
+                lock (stateLock)
                 {
-                    IsBust = true,
-                    NextPlayerUserId = players[currentPlayerIndex].Profile.UserId,
-                    StartTime = StartRoundTimer(),
-                };
+                    whiteConePositions.Clear();
+                    UpdateNextPlayerIndex();
+                    return new EndRoundResponseMessage()
+                    {
+                        IsBust = true,
+                        NextPlayerUserId = players[currentPlayerIndex].Profile.UserId,
+                        StartTime = StartRoundTimer(),
+                    };
+                }
             }
 
             if (saveBustUsed)
@@ -279,6 +305,8 @@ namespace FunBoardGames.App.CantStopGame
             {
                 UserId = player.Profile.UserId,
                 Score = player.Score,
+                IsBusted = player.State == PlayerState.Busted,
+                IsConnected = player.IsConnected,
             }).ToList();
         }
 
@@ -323,36 +351,90 @@ namespace FunBoardGames.App.CantStopGame
 
         private async Task OnRoundTimerEnded(CancellationToken token)
         {
-            if (token.IsCancellationRequested)
-                return;
+            GameFinishedResponseMessage? finishedMessage = null;
+            TimeoutMessage? timeoutMessage = null;
 
-            whiteConePositions.Clear();
-            var currentPlayer = players[currentPlayerIndex];
-            currentPlayer.IncreaseTimeout();
-            var currentId = currentPlayer.Profile.UserId;
+            lock (stateLock)
+            {
+                if (token.IsCancellationRequested || isOver)
+                    return;
 
-            var playerTimeoutCount = players.Count(p => p.TimeoutCount < game.TimeoutLimit);
+                whiteConePositions.Clear();
+                var currentPlayer = players[currentPlayerIndex];
+                currentPlayer.IncreaseTimeout();
 
-            if(playerTimeoutCount < 2) // only one player left. so game is finished
+                if (currentPlayer.TimeoutCount >= game.TimeoutLimit)
+                    currentPlayer.State = PlayerState.Busted;
+
+                if (ActivePlayerCount < 2) // only one player left. so game is finished
+                {
+                    isOver = true;
+                    finishedMessage = new GameFinishedResponseMessage { PlayerScores = GetPlayerScores() };
+                }
+                else
+                {
+                    UpdateNextPlayerIndex();
+
+                    timeoutMessage = new TimeoutMessage()
+                    {
+                        UserId = currentPlayer.Profile.UserId,
+                        TimeoutCount = currentPlayer.TimeoutCount,
+                        NextUserId = players[currentPlayerIndex].Profile.UserId,
+                        RoundStartTime = StartRoundTimer(),
+                    };
+                }
+            }
+
+            if (finishedMessage != null)
             {
                 await Task.Delay(1000);
-                await hubContext.Clients.Group(GroupKey).SendAsync(CantStopGameMessageNames.GameFinished, new GameFinishedResponseMessage
-                {
-                    PlayerScores = GetPlayerScores(),
-                });
+                await hubContext.Clients.Group(GroupKey).SendAsync(CantStopGameMessageNames.GameFinished, finishedMessage);
+                onGameFinished(this);
                 return;
             }
 
-            UpdateNextPlayerIndex();
+            await hubContext.Clients.Group(GroupKey).SendAsync(CantStopGameMessageNames.Timeout, timeoutMessage);
+        }
 
-            var newStartTime = StartRoundTimer();
+        protected override async Task OnPlayerDisconnectedAsync(CantStopGamePlayer player)
+        {
+            GameFinishedResponseMessage? finishedMessage = null;
+            TimeoutMessage? skipMessage = null;
 
-            await hubContext.Clients.Group(GroupKey).SendAsync(CantStopGameMessageNames.Timeout, new TimeoutMessage(){
-                UserId = currentId,
-                TimeoutCount = currentPlayer.TimeoutCount,
-                NextUserId = players[currentPlayerIndex].Profile.UserId,
-                RoundStartTime = newStartTime,
-            });
+            lock (stateLock)
+            {
+                if (isOver)
+                    return;
+
+                if (ActivePlayerCount < 2)
+                {
+                    isOver = true;
+                    roundCancelTokenSource?.Cancel();
+                    finishedMessage = new GameFinishedResponseMessage { PlayerScores = GetPlayerScores() };
+                }
+                else if (players[currentPlayerIndex] == player)
+                {
+                    // It was the turn of the player. It moves on right away instead of waiting for the round timer, like a turn that timed out
+                    whiteConePositions.Clear();
+                    UpdateNextPlayerIndex();
+
+                    skipMessage = new TimeoutMessage()
+                    {
+                        UserId = player.Profile.UserId,
+                        TimeoutCount = player.TimeoutCount,
+                        NextUserId = players[currentPlayerIndex].Profile.UserId,
+                        RoundStartTime = StartRoundTimer(),
+                    };
+                }
+            }
+
+            if (finishedMessage != null)
+            {
+                await hubContext.Clients.Group(GroupKey).SendAsync(CantStopGameMessageNames.GameFinished, finishedMessage);
+                onGameFinished(this);
+            }
+            else if (skipMessage != null)
+                await hubContext.Clients.Group(GroupKey).SendAsync(CantStopGameMessageNames.Timeout, skipMessage);
         }
     }
 }

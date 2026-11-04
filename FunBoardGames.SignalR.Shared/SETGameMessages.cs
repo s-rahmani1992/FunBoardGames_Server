@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 
@@ -11,6 +11,7 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
         public const string RoundTimeout = "SET_RoundTimeout";
         public const string CardHint = "SET_CardHint";
         public const string PlayerUsedHint = "SET_PlayerUsedHint";
+        public const string GameFinished = "SET_GameFinished";
     }
 
     public class SETCardDTO
@@ -38,6 +39,12 @@ namespace FunBoardGames.Network.SignalR.Shared.SET
         public int Corrects { get; set; }
         public int Wrongs { get; set; }
         public bool IsBusted { get; set; }
+        public bool IsConnected { get; set; } = true;
+    }
+
+    public class GameFinishedMessage
+    {
+        public List<SETPlayerResultDTO> FinalScores { get; set; }
     }
 
     public class GameBeginMessage

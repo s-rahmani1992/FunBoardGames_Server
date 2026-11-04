@@ -1,4 +1,4 @@
-﻿using FunBoardGames.App.Core;
+using FunBoardGames.App.Core;
 using FunBoardGames.Network.SignalR.Shared;
 
 namespace FunBoardGames.App.SETGame
@@ -11,7 +11,11 @@ namespace FunBoardGames.App.SETGame
 
         public int WrongScore { get; set; } = 0;
         public int CorrectScore { get; set; } = 0;
-        public bool IsBusted { get; set; } = false;
+        public bool IsBusted
+        {
+            get => State == PlayerState.Busted;
+            set => State = value ? PlayerState.Busted : PlayerState.Normal;
+        }
         public int UsedHintCount { get; set; } = 0;
         public int? LastHintRound { get; set; } = null;
 

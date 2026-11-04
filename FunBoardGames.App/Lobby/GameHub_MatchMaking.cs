@@ -1,4 +1,4 @@
-﻿using FunBoardGames.App.Core;
+using FunBoardGames.App.Core;
 using FunBoardGames.App.Lobby;
 using FunBoardGames.Network.SignalR.Shared;
 using FunBoardGames.SignalR.Shared;
@@ -45,18 +45,17 @@ namespace FunBoardGames.App
             }
         }
 
+        // Players can only leave on their own while the room is waiting for players. After the game begins, leaving is a disconnection
         [HubMethodName(LobbyMessageNames.PlayerLeave)]
         public async Task LeaveRoom()
         {
-            await LeaveRoomInternal();
+            await LeaveRoomInternal(voluntary: true);
         }
 
-        async Task LeaveRoomInternal(bool notifyCaller = true)
+        async Task LeaveRoomInternal(bool voluntary = false, bool notifyCaller = true)
         {
             if (Context.Items[ContextNames.Room] is not GameController gameController)
                 return;
-
-            Context.Items.Remove(ContextNames.Room);
 
             var profile = Context.Items[ContextNames.Profile] as Profile;
             var leaveMessage = new PlayerLeaveRoomResponseMessage
@@ -67,14 +66,28 @@ namespace FunBoardGames.App
             await gameController.RoomLock.WaitAsync();
             try
             {
-                gameController.RemovePlayer(profile.UserId);
+                if (voluntary && gameController.IsStarted)
+                    return;
+
+                // Leaving twice, e.g. a leave request followed by the disconnection, must not remove the player or the game twice
+                Context.Items.Remove(ContextNames.Room);
+
+                if (gameController.RemovePlayer(profile.UserId) == false)
+                {
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameController.GroupKey);
+                    return;
+                }
+
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameController.GroupKey);
                 await Clients.Group(gameController.GroupKey).SendAsync(LobbyMessageNames.PlayerLeave, leaveMessage);
 
-                if (notifyCaller)
+                // The caller left on purpose before the game began, so it is the only one that needs to know it is out of the room
+                if (notifyCaller && gameController.IsStarted == false)
                     await Clients.Caller.SendAsync(LobbyMessageNames.PlayerLeave, leaveMessage);
 
-                if (gameController.PlayerCount == 0)
+                await gameController.OnPlayerLeftAsync(profile.UserId);
+
+                if (gameController.ConnectedPlayerCount == 0)
                 {
                     var lobbyService = _provider.GetRequiredService<MatchMakingService>();
                     lobbyService.RemoveGame(gameController);

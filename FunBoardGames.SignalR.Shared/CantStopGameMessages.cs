@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace FunBoardGames.Network.SignalR.Shared.CantStop
@@ -24,6 +24,8 @@ namespace FunBoardGames.Network.SignalR.Shared.CantStop
     {
         public int UserId { get; set; }
         public int Score { get; set; }
+        public bool IsBusted { get; set; }
+        public bool IsConnected { get; set; } = true;
     }
 
     public class GameDataMessage
